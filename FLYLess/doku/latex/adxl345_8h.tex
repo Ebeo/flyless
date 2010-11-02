@@ -1,0 +1,217 @@
+\hypertarget{adxl345_8h}{
+\section{adxl345.h File Reference}
+\label{adxl345_8h}\index{adxl345.h@{adxl345.h}}
+}
+{\ttfamily \#include \char`\"{}stm32f10x.h\char`\"{}}\par
+\subsection*{Defines}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{group___a_d_x_l345_gaa58e0287a2b6f1815a98c7e5e6724e20}{
+\#define {\bfseries DEVID}~0x00}
+\label{group___a_d_x_l345_gaa58e0287a2b6f1815a98c7e5e6724e20}
+
+\item 
+\hypertarget{group___a_d_x_l345_gad8cef9349ca846328f439fcb51993bb5}{
+\#define {\bfseries THRESH\_\-TAP}~0x1D}
+\label{group___a_d_x_l345_gad8cef9349ca846328f439fcb51993bb5}
+
+\item 
+\hypertarget{group___a_d_x_l345_gaed743ef8e7fd8d1bc4f3a456e730c432}{
+\#define {\bfseries OFSX}~0x1E}
+\label{group___a_d_x_l345_gaed743ef8e7fd8d1bc4f3a456e730c432}
+
+\item 
+\hypertarget{group___a_d_x_l345_ga8033e657e74ff6ca78685f261033a8c5}{
+\#define {\bfseries OFSY}~0x1F}
+\label{group___a_d_x_l345_ga8033e657e74ff6ca78685f261033a8c5}
+
+\item 
+\hypertarget{group___a_d_x_l345_ga0edf225116b246ec3316391691a2a634}{
+\#define {\bfseries OFSZ}~0x20}
+\label{group___a_d_x_l345_ga0edf225116b246ec3316391691a2a634}
+
+\item 
+\hypertarget{group___a_d_x_l345_gaf8ac375e38f541d5731744e12fec07ca}{
+\#define {\bfseries DUR}~0x21}
+\label{group___a_d_x_l345_gaf8ac375e38f541d5731744e12fec07ca}
+
+\item 
+\hypertarget{group___a_d_x_l345_gacad26272f1e050d1b2b2a41b84a471a2}{
+\#define {\bfseries LATENT}~0x22}
+\label{group___a_d_x_l345_gacad26272f1e050d1b2b2a41b84a471a2}
+
+\item 
+\hypertarget{group___a_d_x_l345_ga58dde5b4c75245b4660a165318cac36b}{
+\#define {\bfseries WINDOW}~0x23}
+\label{group___a_d_x_l345_ga58dde5b4c75245b4660a165318cac36b}
+
+\item 
+\hypertarget{group___a_d_x_l345_gaede29895883c40f0be2f4e509019bb35}{
+\#define {\bfseries THRESH\_\-ACT}~0x24}
+\label{group___a_d_x_l345_gaede29895883c40f0be2f4e509019bb35}
+
+\item 
+\hypertarget{group___a_d_x_l345_ga53c6ad41a83f84d0d272f78350b8e144}{
+\#define {\bfseries THRESH\_\-INACT}~0x25}
+\label{group___a_d_x_l345_ga53c6ad41a83f84d0d272f78350b8e144}
+
+\item 
+\hypertarget{group___a_d_x_l345_gabc84e6e6917a9bfe611da2914a580842}{
+\#define {\bfseries TIME\_\-INACT}~0x26}
+\label{group___a_d_x_l345_gabc84e6e6917a9bfe611da2914a580842}
+
+\item 
+\hypertarget{group___a_d_x_l345_gacbc34474d6dd061daa0fa70d946c18ff}{
+\#define {\bfseries ACT\_\-INACT\_\-CTL}~0x27}
+\label{group___a_d_x_l345_gacbc34474d6dd061daa0fa70d946c18ff}
+
+\item 
+\hypertarget{group___a_d_x_l345_gaf4316f275ad7d11d0ea3778b88be8dea}{
+\#define {\bfseries THRESH\_\-FF}~0x28}
+\label{group___a_d_x_l345_gaf4316f275ad7d11d0ea3778b88be8dea}
+
+\item 
+\hypertarget{group___a_d_x_l345_gaa0fea52b674b391e9c7abf2149ace316}{
+\#define {\bfseries TIME\_\-FF}~0x29}
+\label{group___a_d_x_l345_gaa0fea52b674b391e9c7abf2149ace316}
+
+\item 
+\hypertarget{group___a_d_x_l345_gaab9e7647afc6e0f7e537b7cb2bdab57b}{
+\#define {\bfseries TAP\_\-AXES}~0x2A}
+\label{group___a_d_x_l345_gaab9e7647afc6e0f7e537b7cb2bdab57b}
+
+\item 
+\hypertarget{group___a_d_x_l345_ga0f6c8c7ea3016f3792f26fd77b4bb839}{
+\#define {\bfseries ACT\_\-TAP\_\-STATUS}~0x2B}
+\label{group___a_d_x_l345_ga0f6c8c7ea3016f3792f26fd77b4bb839}
+
+\item 
+\hypertarget{group___a_d_x_l345_gac58f87a59871d65bd54ed20ff8a57255}{
+\#define {\bfseries BW\_\-RATE}~0x2C}
+\label{group___a_d_x_l345_gac58f87a59871d65bd54ed20ff8a57255}
+
+\item 
+\hypertarget{group___a_d_x_l345_ga3d1c4b49cdb2a4fc68c03863dcb5dbb4}{
+\#define {\bfseries POWER\_\-CTL}~0x2D}
+\label{group___a_d_x_l345_ga3d1c4b49cdb2a4fc68c03863dcb5dbb4}
+
+\item 
+\hypertarget{group___a_d_x_l345_gabf7a56466fd6203663685a04448c9185}{
+\#define {\bfseries INT\_\-ENABLE}~0x2E}
+\label{group___a_d_x_l345_gabf7a56466fd6203663685a04448c9185}
+
+\item 
+\hypertarget{group___a_d_x_l345_gac3ac41df43654a661115295ce2c45dc8}{
+\#define {\bfseries INT\_\-MAP}~0x2F}
+\label{group___a_d_x_l345_gac3ac41df43654a661115295ce2c45dc8}
+
+\item 
+\hypertarget{group___a_d_x_l345_ga06206757c9548bd8bfe8a318ba4fea62}{
+\#define {\bfseries INT\_\-SOURCE}~0x30}
+\label{group___a_d_x_l345_ga06206757c9548bd8bfe8a318ba4fea62}
+
+\item 
+\hypertarget{group___a_d_x_l345_ga7cee98082bcdd5f5f2a34ded0663665e}{
+\#define {\bfseries DATA\_\-FORMAT}~0x31}
+\label{group___a_d_x_l345_ga7cee98082bcdd5f5f2a34ded0663665e}
+
+\item 
+\hypertarget{group___a_d_x_l345_ga9ad288fe56c8bac665fb698cb17a5a78}{
+\#define {\bfseries DATAX0}~0x32}
+\label{group___a_d_x_l345_ga9ad288fe56c8bac665fb698cb17a5a78}
+
+\item 
+\hypertarget{group___a_d_x_l345_ga1757e9382b6a644df3584266e9377b53}{
+\#define {\bfseries DATAX1}~0x33}
+\label{group___a_d_x_l345_ga1757e9382b6a644df3584266e9377b53}
+
+\item 
+\hypertarget{group___a_d_x_l345_ga8cbdc6ef51a274ca806a9f282a4b30c3}{
+\#define {\bfseries DATAY0}~0x34}
+\label{group___a_d_x_l345_ga8cbdc6ef51a274ca806a9f282a4b30c3}
+
+\item 
+\hypertarget{group___a_d_x_l345_ga65f31537eef3e92ba15f7121c0657711}{
+\#define {\bfseries DATAY1}~0x35}
+\label{group___a_d_x_l345_ga65f31537eef3e92ba15f7121c0657711}
+
+\item 
+\hypertarget{group___a_d_x_l345_ga1f041adda135207759247d08ebce1b51}{
+\#define {\bfseries DATAZ0}~0x36}
+\label{group___a_d_x_l345_ga1f041adda135207759247d08ebce1b51}
+
+\item 
+\hypertarget{group___a_d_x_l345_gad6f4f9eb5ffc369b284750ca7f27022a}{
+\#define {\bfseries DATAZ1}~0x37}
+\label{group___a_d_x_l345_gad6f4f9eb5ffc369b284750ca7f27022a}
+
+\item 
+\hypertarget{group___a_d_x_l345_ga493b5218c89ab8d0ccbe78b1ddb7db39}{
+\#define {\bfseries FIFO\_\-CTL}~0x38}
+\label{group___a_d_x_l345_ga493b5218c89ab8d0ccbe78b1ddb7db39}
+
+\item 
+\hypertarget{group___a_d_x_l345_ga9e5c9878194f462bf7a46ca8a7b8f9d2}{
+\#define {\bfseries FIFO\_\-STATUS}~0x39}
+\label{group___a_d_x_l345_ga9e5c9878194f462bf7a46ca8a7b8f9d2}
+
+\item 
+\hypertarget{group___a_d_x_l345_gafd0ea9f05789a734d1e08f4d7210a3c4}{
+\#define {\bfseries ADXL\_\-MB}~0x40}
+\label{group___a_d_x_l345_gafd0ea9f05789a734d1e08f4d7210a3c4}
+
+\item 
+\hypertarget{group___a_d_x_l345_ga5a70139e7bdc06d65432e81dd8559fec}{
+\#define {\bfseries ADXL\_\-R}~0x80}
+\label{group___a_d_x_l345_ga5a70139e7bdc06d65432e81dd8559fec}
+
+\item 
+\hypertarget{group___a_d_x_l345_ga978676713fbe338bd3b2e96f83f25cd0}{
+\#define {\bfseries ADXL\_\-W}~0x00}
+\label{group___a_d_x_l345_ga978676713fbe338bd3b2e96f83f25cd0}
+
+\item 
+\hypertarget{group___a_d_x_l345_ga948389d03c1664c4f813e06a13b3553f}{
+\#define {\bfseries X\_\-OFF}~0xFF}
+\label{group___a_d_x_l345_ga948389d03c1664c4f813e06a13b3553f}
+
+\item 
+\hypertarget{group___a_d_x_l345_ga0399aad282e77f36d5786e0177b6a5ed}{
+\#define {\bfseries Y\_\-OFF}~0xFA}
+\label{group___a_d_x_l345_ga0399aad282e77f36d5786e0177b6a5ed}
+
+\item 
+\hypertarget{group___a_d_x_l345_ga85e207e8639c71a4c71617982a5503f5}{
+\#define {\bfseries Z\_\-OFF}~0x06}
+\label{group___a_d_x_l345_ga85e207e8639c71a4c71617982a5503f5}
+
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+ErrorStatus \hyperlink{group___a_d_x_l345_ga515be22246de406138aac81725b02417}{ADXL\_\-SPI\_\-Setup} (void)
+\begin{DoxyCompactList}\small\item\em ADXL Setup Initialize GPIOs and SPI for SPI1 inclusive GPIOC\_\-14 and GPIO\_\-15 for interrupt handling Initial values for the sennsor are hardcoded ! -\/$>$ :(. \item\end{DoxyCompactList}\item 
+void \hyperlink{group___a_d_x_l345_ga710915ed3d25d6821df88efd3fa9b9e8}{ADXL\_\-Write} (uint8\_\-t reg, uint8\_\-t byte)
+\begin{DoxyCompactList}\small\item\em Write a single byte on the SPI interface. \item\end{DoxyCompactList}\item 
+uint8\_\-t \hyperlink{group___a_d_x_l345_gacd4a7e2d0b4fa4dcd452069caf32e060}{ADXL\_\-ReadByte} (uint8\_\-t reg)
+\begin{DoxyCompactList}\small\item\em Reads a single byte from the SPI interface. \item\end{DoxyCompactList}\item 
+void \hyperlink{group___a_d_x_l345_gade610253fb1631ecf23a9011e83748eb}{ADXL\_\-ReadSeq} (uint8\_\-t reg, uint8\_\-t $\ast$data, uint8\_\-t count)
+\begin{DoxyCompactList}\small\item\em Reads a sequence of bytes from the SPI interface. \item\end{DoxyCompactList}\item 
+void \hyperlink{group___a_d_x_l345_gaa19db377b2af2dbe1bfdcf3acc7baf2b}{ADXL\_\-GetACC} (int16\_\-t $\ast$acc)
+\begin{DoxyCompactList}\small\item\em returns the accelerometer values \item\end{DoxyCompactList}\item 
+void \hyperlink{group___a_d_x_l345_ga7468e213fa5c879ab0150b6f7bd55dff}{ADXL\_\-CalAngle} (float $\ast$acc\_\-g, float $\ast$angel)
+\begin{DoxyCompactList}\small\item\em Calculates the angel based on the accelerometer values. \item\end{DoxyCompactList}\item 
+void \hyperlink{group___a_d_x_l345_ga38eef7277e2f231f7e3bb95bc284a258}{ADXL\_\-Convert\_\-to\_\-G} (int16\_\-t $\ast$acc, float $\ast$acc\_\-g)
+\begin{DoxyCompactList}\small\item\em Converts the raw values to G forces. \item\end{DoxyCompactList}\item 
+\hypertarget{group___a_d_x_l345_gac125f43bd4f4c122e337badba444f3e4}{
+void \hyperlink{group___a_d_x_l345_gac125f43bd4f4c122e337badba444f3e4}{ADXL\_\-Clr\_\-Rcv\_\-Buf} (void)}
+\label{group___a_d_x_l345_gac125f43bd4f4c122e337badba444f3e4}
+
+\begin{DoxyCompactList}\small\item\em dummy function for clearing the receive buffer of the SPI interface \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+\begin{DoxyAuthor}{Author}
+Michael Bubestinger
+\end{DoxyAuthor}
+Headerfile for Analog-\/Device ADXL345 Datasheet: \href{http://www.analog.com/static/imported-files/data_sheets/ADXL345.pdf}{\tt http://www.analog.com/static/imported-\/files/data\_\-sheets/ADXL345.pdf} 
