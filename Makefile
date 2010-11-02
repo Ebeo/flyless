@@ -27,15 +27,17 @@ RTOSMEM  = $(RTOS)/portable/MemMang
 RTOSINC  = $(RTOS)/include
 
 
-PIXHAWK = ./src/pixhawk
-HAL 	= ./src/hal
-SYSTEM  = ./src/system
+PIXHAWK 	= ./src/pixhawk
+MAVLINK 	= ./src/mavlink
+MAVLINKCOM 	= ./src/mavlink/common/
+HAL 		= ./src/hal
+SYSTEM  	= ./src/system
 
 ## Includes for FreeRTOS, Periph and CMSIS
-CUSTOMINCDIR = $(STMSPDINCDIR) $(CMSISDEVDIR) $(CMSISCOREDIR) $(RTOS) $(RTOSINC) $(RTOSPORT) $(RTOSMEM)
+CUSTOMINCDIR = $(STMSPDINCDIR) $(CMSISDEVDIR) $(CMSISCOREDIR) $(RTOS) $(RTOSINC) $(RTOSPORT) $(RTOSMEM) 
 
 ## Custom Includes
-CUSTOMINCDIR += ./src $(PIXHAWK) $(HAL) $(SYSTEM)
+CUSTOMINCDIR += ./src $(PIXHAWK) $(HAL) $(SYSTEM) $(MAVLINK) $(MAVLINKCOM)
 
 ## optional Libraries (*.a) 
 # CUSTOMLIBDIR = 

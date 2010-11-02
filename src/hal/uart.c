@@ -34,7 +34,17 @@
 #include <stdio.h>
 
 
+void UART_Send(uint8_t* c, uint8_t len)
+{
+	uint8_t i = 0;
 
+	while(i<len)
+	{
+		USART_SendData(USART1, (uint8_t) c[i]);
+		while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET);
+		i++;
+	}
+}
 void UART_Puts(uint8_t* c)
 {
 	uint8_t i = 0;

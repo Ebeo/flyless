@@ -38,5 +38,6 @@
 
 void UART_Protocol_Init();
 void UART_Puts(uint8_t* c);
+void UART_Send(uint8_t* c, uint8_t len);
 
 #endif /* UART_PROTOCOL_H_ */

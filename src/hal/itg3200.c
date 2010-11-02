@@ -220,9 +220,6 @@ uint8_t ITG_IsBlocked()
 
 void ITG_GetRate(float_vect3* rate)
 {
-
-	vTaskSuspendAll(); //we dont want to be disturbed by other tasks
-
 	int16_t data[3];
 
 	/*
@@ -247,7 +244,6 @@ void ITG_GetRate(float_vect3* rate)
 	/*
 	 * resume from blocking
 	 */
-	xTaskResumeAll();
 }
 
 
@@ -288,7 +284,7 @@ void ITG_I2C_Setup()
 
 	ITG_Write(PWR_MGM, 0x80);
 	for(i = 0;i<9999;i++);
-	ITG_Write(SMPLRT_DIV, 0x00);
+//	ITG_Write(SMPLRT_DIV, 0x00);
 	for(i = 0;i<9999;i++);
 	ITG_Write(DLPF_FS, 0x1E);
 	for(i = 0;i<9999;i++);

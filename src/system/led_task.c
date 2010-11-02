@@ -36,7 +36,7 @@ void LED_Task( void *pvParameters )
 
 	while(1)
 	{
-		vTaskDelay(ONE_SECOND/2);
+		vTaskDelay(ONE_SECOND);
 		if(toggle == 1)
 		{
 			GPIO_ResetBits(GPIOB,GPIO_Pin_1);
