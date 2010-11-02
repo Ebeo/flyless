@@ -119,7 +119,6 @@ void SetClock()
 
 
 	RCC_HSICmd(ENABLE);
-
 	RCC_PLLCmd(DISABLE);
 	RCC_PLLConfig(RCC_PLLSource_HSI_Div2,RCC_PLLMul_16); /* Sysclock 64MHz */
 	RCC_PLLCmd(ENABLE);

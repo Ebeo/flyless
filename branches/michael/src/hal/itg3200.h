@@ -42,7 +42,7 @@
 
 #define OWNADDRESS 	0x30	// dummy address for the STM32
 #define ITGADDRESS  0xD0	// address of the ITG3200
-#define I2C_SPEED 	400000	// I2C Speed 400KHz
+#define I2C_SPEED 	350000	// I2C Speed 400KHz
 
 
 #define WHO_AM_I 			0x00
