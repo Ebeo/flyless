@@ -1,0 +1,51 @@
+\hypertarget{adxl345_8c}{
+\section{adxl345.c File Reference}
+\label{adxl345_8c}\index{adxl345.c@{adxl345.c}}
+}
+{\ttfamily \#include \char`\"{}adxl345.h\char`\"{}}\par
+{\ttfamily \#include \char`\"{}stm32f10x.h\char`\"{}}\par
+{\ttfamily \#include \char`\"{}stm32f10x\_\-gpio.h\char`\"{}}\par
+{\ttfamily \#include \char`\"{}stm32f10x\_\-spi.h\char`\"{}}\par
+{\ttfamily \#include \char`\"{}stm32f10x\_\-rcc.h\char`\"{}}\par
+{\ttfamily \#include $<$math.h$>$}\par
+\subsection*{Defines}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{adxl345_8c_a7d7c5434e1ba5380f8e8fc41a4dbb105}{
+\#define \hyperlink{adxl345_8c_a7d7c5434e1ba5380f8e8fc41a4dbb105}{ADXL\_\-CS\_\-LOW}~GPIO\_\-WriteBit(GPIOA,GPIO\_\-Pin\_\-4,Bit\_\-RESET);}
+\label{adxl345_8c_a7d7c5434e1ba5380f8e8fc41a4dbb105}
+
+\begin{DoxyCompactList}\small\item\em macro for selecting the ADXL345 \item\end{DoxyCompactList}\item 
+\hypertarget{adxl345_8c_a20621871cd521e092d52f79800ab08c4}{
+\#define \hyperlink{adxl345_8c_a20621871cd521e092d52f79800ab08c4}{ADXL\_\-CS\_\-HIGH}~GPIO\_\-WriteBit(GPIOA,GPIO\_\-Pin\_\-4,Bit\_\-SET);}
+\label{adxl345_8c_a20621871cd521e092d52f79800ab08c4}
+
+\begin{DoxyCompactList}\small\item\em macro for releasing the ADXL345 \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+ErrorStatus \hyperlink{group___a_d_x_l345_ga515be22246de406138aac81725b02417}{ADXL\_\-SPI\_\-Setup} (void)
+\begin{DoxyCompactList}\small\item\em ADXL Setup Initialize GPIOs and SPI for SPI1 inclusive GPIOC\_\-14 and GPIO\_\-15 for interrupt handling Initial values for the sennsor are hardcoded ! -\/$>$ :(. \item\end{DoxyCompactList}\item 
+void \hyperlink{group___a_d_x_l345_ga710915ed3d25d6821df88efd3fa9b9e8}{ADXL\_\-Write} (uint8\_\-t reg, uint8\_\-t byte)
+\begin{DoxyCompactList}\small\item\em Write a single byte on the SPI interface. \item\end{DoxyCompactList}\item 
+uint8\_\-t \hyperlink{group___a_d_x_l345_gacd4a7e2d0b4fa4dcd452069caf32e060}{ADXL\_\-ReadByte} (uint8\_\-t reg)
+\begin{DoxyCompactList}\small\item\em Reads a single byte from the SPI interface. \item\end{DoxyCompactList}\item 
+void \hyperlink{group___a_d_x_l345_gade610253fb1631ecf23a9011e83748eb}{ADXL\_\-ReadSeq} (uint8\_\-t reg, uint8\_\-t $\ast$data, uint8\_\-t count)
+\begin{DoxyCompactList}\small\item\em Reads a sequence of bytes from the SPI interface. \item\end{DoxyCompactList}\item 
+\hypertarget{group___a_d_x_l345_gac125f43bd4f4c122e337badba444f3e4}{
+void \hyperlink{group___a_d_x_l345_gac125f43bd4f4c122e337badba444f3e4}{ADXL\_\-Clr\_\-Rcv\_\-Buf} ()}
+\label{group___a_d_x_l345_gac125f43bd4f4c122e337badba444f3e4}
+
+\begin{DoxyCompactList}\small\item\em dummy function for clearing the receive buffer of the SPI interface \item\end{DoxyCompactList}\item 
+void \hyperlink{group___a_d_x_l345_gaa19db377b2af2dbe1bfdcf3acc7baf2b}{ADXL\_\-GetACC} (int16\_\-t $\ast$acc)
+\begin{DoxyCompactList}\small\item\em returns the accelerometer values \item\end{DoxyCompactList}\item 
+void \hyperlink{group___a_d_x_l345_ga38eef7277e2f231f7e3bb95bc284a258}{ADXL\_\-Convert\_\-to\_\-G} (int16\_\-t $\ast$acc, float $\ast$acc\_\-g)
+\begin{DoxyCompactList}\small\item\em Converts the raw values to G forces. \item\end{DoxyCompactList}\item 
+void \hyperlink{group___a_d_x_l345_ga7468e213fa5c879ab0150b6f7bd55dff}{ADXL\_\-CalAngle} (float $\ast$acc\_\-g, float $\ast$angel)
+\begin{DoxyCompactList}\small\item\em Calculates the angel based on the accelerometer values. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+\begin{DoxyAuthor}{Author}
+Michael Bubestinger C-\/file for Analog-\/Device ADXL345 Datasheet: \href{http://www.analog.com/static/imported-files/data_sheets/ADXL345.pdf}{\tt http://www.analog.com/static/imported-\/files/data\_\-sheets/ADXL345.pdf} 
+\end{DoxyAuthor}
