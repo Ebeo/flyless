@@ -1,0 +1,85 @@
+\hypertarget{itg3200_8c}{
+\section{itg3200.c File Reference}
+\label{itg3200_8c}\index{itg3200.c@{itg3200.c}}
+}
+{\ttfamily \#include \char`\"{}FreeRTOS.h\char`\"{}}\par
+{\ttfamily \#include \char`\"{}task.h\char`\"{}}\par
+{\ttfamily \#include \char`\"{}itg3200.h\char`\"{}}\par
+{\ttfamily \#include \char`\"{}stm32f10x\_\-conf.h\char`\"{}}\par
+{\ttfamily \#include \char`\"{}stm32f10x.h\char`\"{}}\par
+{\ttfamily \#include \char`\"{}stm32f10x\_\-rcc.h\char`\"{}}\par
+{\ttfamily \#include \char`\"{}stm32f10x\_\-gpio.h\char`\"{}}\par
+{\ttfamily \#include \char`\"{}stm32f10x\_\-i2c.h\char`\"{}}\par
+{\ttfamily \#include \char`\"{}misc.h\char`\"{}}\par
+{\ttfamily \#include $<$stdio.h$>$}\par
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{itg3200_8c_ad0e17b57fe51ed2861178f06899345c0}{
+void {\bfseries I2C1\_\-EV\_\-IRQHandler} ()}
+\label{itg3200_8c_ad0e17b57fe51ed2861178f06899345c0}
+
+\item 
+\hypertarget{itg3200_8c_aecd40b8012604ac4236bda3f65857c37}{
+void {\bfseries I2C2\_\-ER\_\-IRQHandler} (void)}
+\label{itg3200_8c_aecd40b8012604ac4236bda3f65857c37}
+
+\item 
+void \hyperlink{group___i_t_g3200_ga6fb85cf229bd2de86ee79c5509ea628e}{ITG\_\-Write} (uint8\_\-t reg, uint8\_\-t data)
+\begin{DoxyCompactList}\small\item\em write a byte to the a register \item\end{DoxyCompactList}\item 
+uint8\_\-t \hyperlink{group___i_t_g3200_gae06e53cf5ddc3e91b4d746dc150d794f}{ITG\_\-Read} (uint8\_\-t reg)
+\begin{DoxyCompactList}\small\item\em Read register. \item\end{DoxyCompactList}\item 
+\hypertarget{group___i_t_g3200_ga4ebf114ea534d7a854f8c48bf53d6e3c}{
+uint8\_\-t \hyperlink{group___i_t_g3200_ga4ebf114ea534d7a854f8c48bf53d6e3c}{ITG\_\-IsBlocked} ()}
+\label{group___i_t_g3200_ga4ebf114ea534d7a854f8c48bf53d6e3c}
+
+\begin{DoxyCompactList}\small\item\em dummy function checks if the I2C interface is blocked \item\end{DoxyCompactList}\item 
+void \hyperlink{group___i_t_g3200_ga458fdff1250869d0a7bd7dda2f72f8d9}{ITG\_\-GetRate} (float $\ast$rate)
+\begin{DoxyCompactList}\small\item\em Get gyro rate. \item\end{DoxyCompactList}\item 
+void \hyperlink{group___i_t_g3200_ga497272b2596c5d27858802b6cbb7e9f4}{ITG\_\-I2C\_\-Setup} ()
+\begin{DoxyCompactList}\small\item\em ITG Setup Initialize GPIOs and I2C for the ITG Initial values for the sensor are hardcoded ! -\/$>$ :(. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{itg3200_8c_a7dc613355e78fe4e10439bac007ecbff}{
+volatile ITG3200\_\-Dir {\bfseries ITG3200\_\-DIR}}
+\label{itg3200_8c_a7dc613355e78fe4e10439bac007ecbff}
+
+\item 
+\hypertarget{itg3200_8c_a103857d81fd30de023f0ebc8852206cf}{
+volatile uint8\_\-t {\bfseries ITG3200\_\-REGISTER} = 0}
+\label{itg3200_8c_a103857d81fd30de023f0ebc8852206cf}
+
+\item 
+\hypertarget{itg3200_8c_aff5f8b2c221dd93b20d560cc0a1c60f0}{
+volatile uint8\_\-t {\bfseries ITG3200\_\-TX\_\-DATA} = 0}
+\label{itg3200_8c_aff5f8b2c221dd93b20d560cc0a1c60f0}
+
+\item 
+\hypertarget{itg3200_8c_a9da61910760a3135866f6cff8613d18e}{
+volatile uint8\_\-t {\bfseries ITG3200\_\-RX\_\-DATA} = 0}
+\label{itg3200_8c_a9da61910760a3135866f6cff8613d18e}
+
+\item 
+\hypertarget{itg3200_8c_a4fec00b54891ad381069268c9e8ef2a3}{
+volatile uint8\_\-t {\bfseries ITG3200\_\-BLOCKED} = 0}
+\label{itg3200_8c_a4fec00b54891ad381069268c9e8ef2a3}
+
+\item 
+\hypertarget{itg3200_8c_a94b8c3128fa62db6f6af1af03801db9d}{
+uint8\_\-t {\bfseries TX\_\-ID} = 0}
+\label{itg3200_8c_a94b8c3128fa62db6f6af1af03801db9d}
+
+\item 
+\hypertarget{itg3200_8c_a2d22c6dd4896d9052532a95d2dcf8d62}{
+uint8\_\-t {\bfseries RX\_\-ID} = 0}
+\label{itg3200_8c_a2d22c6dd4896d9052532a95d2dcf8d62}
+
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+\begin{DoxyAuthor}{Author}
+Michael Bubestinger
+\end{DoxyAuthor}
+C-\/File for Invesense ITG3200 Datasheet: \href{http://invensense.com/mems/gyro/documents/PS-ITG-3200-00-01.4.pdf}{\tt http://invensense.com/mems/gyro/documents/PS-\/ITG-\/3200-\/00-\/01.4.pdf} 
