@@ -52,6 +52,7 @@ volatile uint8_t ITG3200_TX_DATA = 0;
 volatile uint8_t ITG3200_RX_DATA = 0;
 volatile uint8_t ITG3200_BLOCKED = 0;
 
+int16_vect3* gyro_offset;
 
 uint8_t TX_ID = 0;
 uint8_t RX_ID = 0;
@@ -218,7 +219,7 @@ uint8_t ITG_IsBlocked()
 	return ITG3200_BLOCKED;
 }
 
-void ITG_GetRate(float_vect3* rate)
+void ITG_GetRate(int16_vect3* rate)
 {
 	int16_t data[3];
 
@@ -234,18 +235,28 @@ void ITG_GetRate(float_vect3* rate)
 	data[2]  = (ITG_Read(GYRO_ZOUT_H) << 8);
 	data[2] |=  ITG_Read(GYRO_ZOUT_L);
 
+	rate->x = data[0] + gyro_offset->x;
+	rate->y = data[1] + gyro_offset->y;
+	rate->z = data[2] + gyro_offset->z;
+
+}
+
+void ITG_GetRAD(int16_vect3 rate_raw, float_vect3* rate_rad)
+{
 	/*
 	 * calculate values in rad/s
 	 */
-	rate->x	= (data[0]  + 80) * 0.0012139;	  // to °/s -> / 14.375 //
-	rate->y	= (data[1]  + 30) * 0.0012139;	  // to rad/s ->  (x / 14.375) * 0.01745 //
-	rate->z = (data[2]  - 5 ) * 0.0012139;	  // == x * 0.0012139 //
+	rate_rad->x	= (rate_raw.x) * 0.0012139;	  // to °/s -> / 14.375 //
+	rate_rad->y	= (rate_raw.y) * 0.0012139;	  // to rad/s ->  (x / 14.375) * 0.01745 //
+	rate_rad->z = (rate_raw.z) * 0.0012139;	  // == x * 0.0012139 //
 
-	/*
-	 * resume from blocking
-	 */
 }
 
+
+void ITG_RefOffset(int16_vect3* offset)
+{
+	gyro_offset = offset;
+}
 
 
 void ITG_I2C_Setup()
@@ -284,7 +295,7 @@ void ITG_I2C_Setup()
 
 	ITG_Write(PWR_MGM, 0x80);
 	for(i = 0;i<9999;i++);
-//	ITG_Write(SMPLRT_DIV, 0x00);
+	ITG_Write(SMPLRT_DIV, 0x00);
 	for(i = 0;i<9999;i++);
 	ITG_Write(DLPF_FS, 0x1E);
 	for(i = 0;i<9999;i++);
