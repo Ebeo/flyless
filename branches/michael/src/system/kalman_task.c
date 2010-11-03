@@ -28,6 +28,8 @@
 #include "stm32f10x_gpio.h"
 #include "stm32f10x_rcc.h"
 
+#include "global_data.h"
+
 #include "itg3200.h"
 #include "adxl345.h"
 
@@ -38,10 +40,6 @@
 
 #define DELAY			( 5 / portTICK_RATE_MS)
 
-float_vect3 		gyros;
-int16_vect3		    acc;
-float_vect3 		acc_g;
-float_vect3 		angles;
 
 void KALMAN_Task( void *pvParameters )
 {
@@ -72,14 +70,13 @@ void KALMAN_Task( void *pvParameters )
 
 		GPIO_ResetBits(GPIOA,GPIO_Pin_0);
 
-		ITG_GetRate(&gyros);
-		attitude_observer_predict(gyros);
+		ITG_GetRate(&global_data.gyro_raw);
+		ITG_GetRAD(global_data.gyro_raw,&global_data.gyro_rad);
+		ADXL_GetACC(&global_data.acc_raw);
 
-		ADXL_GetACC(&acc);
-
-
-		attitude_observer_correct_accel(acc);
-		attitude_observer_get_angles(&angles);
+		attitude_observer_predict(global_data.gyro_rad);
+		attitude_observer_correct_accel(global_data.acc_raw);
+		attitude_observer_get_angles(&global_data.attitude);
 
 		GPIO_SetBits(GPIOA,GPIO_Pin_0);
 	}

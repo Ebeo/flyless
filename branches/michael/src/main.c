@@ -34,6 +34,8 @@
 #include "queue.h"
 #include "semphr.h"
 
+#include "global_data.h"
+#include "mavlink_types.h"
 
 #include "led.h"
 #include "uart.h"
@@ -65,6 +67,8 @@ int main(void)
 {
 	SystemInit();
 
+	mavlink_system_t mavlink_system;
+
 	/* Hardware Init */
 
 	/* Init clock system to 64MHz from internal RC-oscillator */
@@ -73,9 +77,15 @@ int main(void)
 	/* Init LEDs and setup Blinktime to 1/2 second */
 	LED_Init();
 
+	/* reset global data values */
+	global_data_reset();
+	global_data_reset_param_defaults();
+
+
 	/* UART Init */
 	UART_Protocol_Init();
 	UART_Puts((uint8_t* )"UUART: OK\r\n");
+
 	/* ADXL345 Init */
 	if(ADXL_SPI_Setup() != SUCCESS)
 	{
@@ -88,6 +98,8 @@ int main(void)
 	/* ITG 3200 Init */
 	/* no Fail-Check implemented */
 	ITG_I2C_Setup();
+	ITG_RefOffset(&global_data.gyro_off);
+
 	UART_Puts((uint8_t* )"ITG 3200: OK\r\n");
 
 
@@ -95,7 +107,7 @@ int main(void)
 	UART_Puts((uint8_t* )"Now starting the scheduler!\r\n");
 
 	xTaskCreate( KALMAN_Task, 	( signed char * ) "KALMAN"	, configMINIMAL_STACK_SIZE * 2	 	,( void * ) NULL, tskKALMAN_PRIORITY 	, NULL );
-	xTaskCreate( PROTOCOL_Task, ( signed char * ) "PROT"	, configMINIMAL_STACK_SIZE * 2		,( void * ) NULL, tskPROTOCOL_PRIORITY 	, NULL );
+	xTaskCreate( PROTOCOL_Task, ( signed char * ) "PROT"	, configMINIMAL_STACK_SIZE * 3		,( void * ) NULL, tskPROTOCOL_PRIORITY 	, NULL );
 	xTaskCreate( LED_Task, 	  	( signed char * ) "LED"   	, configMINIMAL_STACK_SIZE 			,( void * ) NULL, tskLED_PRIORITY    	, NULL );
 
 	vTaskStartScheduler();
