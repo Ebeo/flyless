@@ -52,6 +52,7 @@ SRC += ./src/hal/adxl345.c
 SRC += ./src/hal/itg3200.c
 SRC += ./src/hal/led.c
 SRC += ./src/hal/uart.c
+SRC += ./src/hal/servo.c
 
 ## Files form PIXHAWK Project
 SRC += ./src/pixhawk/attitude_observer.c
@@ -68,6 +69,7 @@ SRC += $(STMSPDSRCDIR)/stm32f10x_spi.c
 SRC += $(STMSPDSRCDIR)/stm32f10x_i2c.c
 SRC += $(STMSPDSRCDIR)/stm32f10x_rcc.c
 SRC += $(STMSPDSRCDIR)/stm32f10x_flash.c
+SRC += $(STMSPDSRCDIR)/stm32f10x_tim.c
 SRC += $(STMSPDSRCDIR)/misc.c
 
 ## FreeRTOS

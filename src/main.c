@@ -41,6 +41,7 @@
 #include "uart.h"
 #include "adxl345.h"
 #include "itg3200.h"
+#include "servo.h"
 
 
 #include "protocol_task.h"
@@ -81,6 +82,12 @@ int main(void)
 	global_data_reset();
 	global_data_reset_param_defaults();
 
+	int8_t servo[4];
+
+
+
+	SERVO_Init();
+
 
 	/* UART Init */
 	UART_Protocol_Init();
@@ -98,7 +105,7 @@ int main(void)
 	/* ITG 3200 Init */
 	/* no Fail-Check implemented */
 	ITG_I2C_Setup();
-	ITG_RefOffset(&global_data.gyro_off);
+	ITG_RefOffset(&global_data.param[PARAM_GYRO_OFF_X]);
 
 	UART_Puts((uint8_t* )"ITG 3200: OK\r\n");
 
@@ -107,19 +114,17 @@ int main(void)
 	UART_Puts((uint8_t* )"Now starting the scheduler!\r\n");
 
 	xTaskCreate( KALMAN_Task, 	( signed char * ) "KALMAN"	, configMINIMAL_STACK_SIZE * 2	 	,( void * ) NULL, tskKALMAN_PRIORITY 	, NULL );
-	xTaskCreate( PROTOCOL_Task, ( signed char * ) "PROT"	, configMINIMAL_STACK_SIZE * 3		,( void * ) NULL, tskPROTOCOL_PRIORITY 	, NULL );
+	xTaskCreate( PROTOCOL_Task, ( signed char * ) "PROT"	, configMINIMAL_STACK_SIZE * 5		,( void * ) NULL, tskPROTOCOL_PRIORITY 	, NULL );
 	xTaskCreate( LED_Task, 	  	( signed char * ) "LED"   	, configMINIMAL_STACK_SIZE 			,( void * ) NULL, tskLED_PRIORITY    	, NULL );
 
 	vTaskStartScheduler();
 	UART_Puts((uint8_t* )"\r\nFailed! U have a problem!");
 	while(1);
-
 }
 
 
 void SetClock()
 {
-	GPIO_InitTypeDef GPIO_InitStructure;
 
 	RCC_DeInit();
 
@@ -135,23 +140,11 @@ void SetClock()
 	RCC_PLLConfig(RCC_PLLSource_HSI_Div2,RCC_PLLMul_16); /* Sysclock 64MHz */
 	RCC_PLLCmd(ENABLE);
 
-	while (RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET)
-	{
-	}
+	while (RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET);
 
 	RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
 
-	while (RCC_GetSYSCLKSource() != 0x08)
-	{
-	}
-
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_AFIO , ENABLE);
-	RCC_MCOConfig(RCC_MCO_SYSCLK);
+	while (RCC_GetSYSCLKSource() != 0x08);
 }
 
 
