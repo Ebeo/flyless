@@ -52,7 +52,7 @@ volatile uint8_t ITG3200_TX_DATA = 0;
 volatile uint8_t ITG3200_RX_DATA = 0;
 volatile uint8_t ITG3200_BLOCKED = 0;
 
-int16_vect3* gyro_offset;
+float_vect3* gyro_offset;
 
 uint8_t TX_ID = 0;
 uint8_t RX_ID = 0;
@@ -253,7 +253,7 @@ void ITG_GetRAD(int16_vect3 rate_raw, float_vect3* rate_rad)
 }
 
 
-void ITG_RefOffset(int16_vect3* offset)
+void ITG_RefOffset(float_vect3* offset)
 {
 	gyro_offset = offset;
 }

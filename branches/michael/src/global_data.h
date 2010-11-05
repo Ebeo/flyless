@@ -48,6 +48,11 @@ enum
 	PARAM_GYRO_OFF_Y,
 	PARAM_GYRO_OFF_Z,
 
+	PARAM_SERVO_C0,
+	PARAM_SERVO_C1,
+	PARAM_SERVO_C2,
+	PARAM_SERVO_C3,
+
 	ONBOARD_PARAM_COUNT
 ///< Store parameters in EEPROM and expose them over MAVLink paramter interface
 } global_param_id;
@@ -67,6 +72,10 @@ struct global_struct
 	 * System State
 	 **********************/
 
+	uint8_t 	mode;
+	uint8_t		nav;
+	uint8_t		state;
+
 	float_vect3 attitude;		/* Attitude euler Angles */
 	float		height;			/* Estimated Height above system start */
 
@@ -79,7 +88,6 @@ struct global_struct
 	int16_vect3 acc_raw; 		/* Accelerometer RAW */
 	float_vect3 acc_g;			/* Accelerometer in g */
 
-	int16_vect3 gyro_off;		/* Offset value */
 	int16_vect3 gyro_raw;   	/* Gyro rates RAW */
 	float_vect3 gyro_rad;       /* Gyro rates in rad/s */
 	uint16_t 	gyro_temp_raw;  /* Temperature of Gyro-Sensor RAW */
@@ -97,6 +105,10 @@ struct global_struct
 
 static inline void global_data_reset(void)
 {
+	global_data.mode  = MAV_STATE_UNINIT;
+	global_data.nav   = MAV_NAV_GROUNDED;
+	global_data.state = MAV_STATE_UNINIT;
+
 	global_data.acc_off.x = 0;
 	global_data.acc_off.y = 0;
 	global_data.acc_off.z = 0;
@@ -107,10 +119,6 @@ static inline void global_data_reset(void)
 	global_data.acc_g.y = 0;
 	global_data.acc_g.z = 0;
 
-
-	global_data.gyro_off.x = 0;
-	global_data.gyro_off.y = 0;
-	global_data.gyro_off.z = 0;
 	global_data.gyro_raw.x = 0;
 	global_data.gyro_raw.y = 0;
 	global_data.gyro_raw.z = 0;
@@ -155,6 +163,18 @@ static inline void global_data_reset_param_defaults(void)
 
 	global_data.param[PARAM_GYRO_OFF_Z] = 0;
 	strcpy(global_data.param_name[PARAM_GYRO_OFF_Z], "GYRO_OFF_Z");
+
+	global_data.param[PARAM_SERVO_C0] = 0;
+	strcpy(global_data.param_name[PARAM_SERVO_C0], "SERVO_C0");
+
+	global_data.param[PARAM_SERVO_C1] = 0;
+	strcpy(global_data.param_name[PARAM_SERVO_C1], "SERVO_C1");
+
+	global_data.param[PARAM_SERVO_C2] = 0;
+	strcpy(global_data.param_name[PARAM_SERVO_C2], "SERVO_C2");
+
+	global_data.param[PARAM_SERVO_C3] = 0;
+	strcpy(global_data.param_name[PARAM_SERVO_C3], "SERVO_C3");
 
 	mavlink_system.sysid = global_data.param[PARAM_SYSTEM_ID];
 	mavlink_system.compid = global_data.param[PARAM_COMPONENT_ID];

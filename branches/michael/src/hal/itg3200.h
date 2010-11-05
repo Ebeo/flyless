@@ -81,7 +81,7 @@ void ITG_I2C_Setup(void);
 void ITG_GetRate(int16_vect3* rate);
 
 void ITG_GetRAD(int16_vect3 rate_raw, float_vect3* rate_rad);
-void ITG_RefOffset(int16_vect3* offset);
+void ITG_RefOffset(float_vect3* offset);
 
 /**
  * @brief Read register
