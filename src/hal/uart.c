@@ -33,10 +33,8 @@
 
 
 
-#include <stdio.h>
 
-
-uint8_t		  RX_Buffer[255];
+uint8_t		  RX_Buffer[50];
 uint8_t		  RX_Insert, RX_Extract;
 
 uint8_t UART_CharAvailable(void)

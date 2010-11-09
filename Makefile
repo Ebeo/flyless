@@ -3,14 +3,16 @@
 TARGET = flyless
 
 
-CHIP = STM32F10x_512k_64k
+CHIP = STM32F10x_128k_20k
 # Optimization level, can be [0, 1, 2, 3, s]. 
 # 0 = turn off optimization. s = optimize for size.
 # (Note: 3 is not always the best optimization level. See avr-libc FAQ.)
 OPT = 0
-CDEFS += -DSTM32F10X_HD -DUSE_STDPERIPH_DRIVER
+#CDEFS += -DSTM32F10X_HD -DUSE_STDPERIPH_DRIVER
+CDEFS += -DSTM32F10X_MD -DUSE_STDPERIPH_DRIVER
 
-LINKERSCRIPT = ./firmware/STM32F10x_512k_64k_flash.ld
+#LINKERSCRIPT = ./firmware/STM32F10x_512k_64k_flash.ld
+LINKERSCRIPT = ./firmware/STM32F10x_128k_20k_flash.ld
 
 FIRMLIBDIR   = ./firmware
 STMLIBDIR    = $(FIRMLIBDIR)/STM32F10x_StdPeriph_Lib_V3.3.0/Libraries

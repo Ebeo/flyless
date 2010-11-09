@@ -68,7 +68,7 @@ int main(void)
 {
 	SystemInit();
 
-	mavlink_system_t mavlink_system;
+	//mavlink_system_t mavlink_system;
 
 	/* Hardware Init */
 
@@ -81,9 +81,6 @@ int main(void)
 	/* reset global data values */
 	global_data_reset();
 	global_data_reset_param_defaults();
-
-	int8_t servo[4];
-
 
 
 	SERVO_Init();
@@ -114,7 +111,7 @@ int main(void)
 	UART_Puts((uint8_t* )"Now starting the scheduler!\r\n");
 
 	xTaskCreate( KALMAN_Task, 	( signed char * ) "KALMAN"	, configMINIMAL_STACK_SIZE * 2	 	,( void * ) NULL, tskKALMAN_PRIORITY 	, NULL );
-	xTaskCreate( PROTOCOL_Task, ( signed char * ) "PROT"	, configMINIMAL_STACK_SIZE * 5		,( void * ) NULL, tskPROTOCOL_PRIORITY 	, NULL );
+	xTaskCreate( PROTOCOL_Task, ( signed char * ) "PROT"	, configMINIMAL_STACK_SIZE * 2		,( void * ) NULL, tskPROTOCOL_PRIORITY 	, NULL );
 	xTaskCreate( LED_Task, 	  	( signed char * ) "LED"   	, configMINIMAL_STACK_SIZE 			,( void * ) NULL, tskLED_PRIORITY    	, NULL );
 
 	vTaskStartScheduler();
