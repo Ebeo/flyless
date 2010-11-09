@@ -78,7 +78,7 @@ void PROTOCOL_Task( void *pvParameters )
 		x2 = (int8_t)global_data.param[9];
 		x3 = (int8_t)global_data.param[10];
 		x4 = (int8_t)global_data.param[11];
-		SERVO_SetValue(x1,x2,x3,x4);
+ 		SERVO_SetValue(x1,x2,x3,x4);
 
 	}
 }
