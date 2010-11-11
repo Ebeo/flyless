@@ -20,27 +20,12 @@
     along with FLYLess.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/**
- * @addtogroup  Driver
- * @{
- * @addtogroup  UART
- * @{
- * @file uart.h
- * @author Michael Bubestinger
- *
- * Headerfile for UART Interface
- */
+#ifndef SERVO_H_
+#define SERVO_H_
 
-#ifndef UART_PROTOCOL_H_
-#define UART_PROTOCOL_H_
 
-#include "stm32f10x.h"
 
-void UART_Protocol_Init();
-void UART_Puts(uint8_t* c);
-void UART_Send(uint8_t* c, uint8_t len);
-void UART_SendChar(uint8_t c);
-uint8_t UART_CharAvailable(void);
-uint8_t UART_GetChar(void);
+void SERVO_Init(void);
+void SERVO_SetValue(int8_t chan0,int8_t chan1, int8_t chan2, int8_t chan3);
 
-#endif /* UART_PROTOCOL_H_ */
+#endif /* SERVO_H_ */

@@ -27,11 +27,15 @@
 
 #include "stm32f10x.h"
 
+#include "global_data.h"
+
 #include "uart.h"
 #include "adxl345.h"
 
-#include "attitude_observer.h"
+#include "mavlink_bridge.h"
 #include "mav_vect.h"
+#include "mavlink.h"
+
 
 #include <stdio.h>
 
@@ -40,11 +44,11 @@
 
 
 
+int system_type = MAV_HELICOPTER;
+uint8_t param = 0;
 
-extern float_vect3 			gyros;
-extern int16_vect3			acc;
-extern float_vect3 			acc_g;
-extern float_vect3 			angles;
+void handle_mav_link_mess(void);
+
 
 void PROTOCOL_Task( void *pvParameters )
 {
@@ -172,28 +176,24 @@ void put_logview()
 	char angle_x[10] = "";
 	char angle_y[10] = "";
 
-	while(1)
-	{
-		vTaskDelay( 100 / ONE_MS);
-	//	attitude_observer_get_angles(&angles);
-		ADXL_Convert_to_G(&acc, &acc_g);
-		UART_Puts((uint8_t* )"$1;1;;");
-		sprintf(x,"%0.2f;",  acc_g.x);
-		UART_Puts((uint8_t*)x); //x
-		sprintf(y,"%0.2f;",  acc_g.y);
-		UART_Puts((uint8_t*)y); //y
-		sprintf(z,"%0.2f;",  acc_g.z);
-		UART_Puts((uint8_t*)z); //z
-		sprintf(roll,"%0.2f;",  gyros.x);
-		UART_Puts((uint8_t*)roll); //roll
-		sprintf(nick,"%0.2f;",  gyros.y);
-		UART_Puts((uint8_t*)nick); //nick
-		sprintf(yaw,"%0.2f;",  gyros.z);
-		UART_Puts((uint8_t*)yaw); //yaw
-		sprintf(angle_x,"%0.2f;",  (angles.x * 57.295));
-		UART_Puts((uint8_t*)angle_x);
-		sprintf(angle_y,"%0.2f;",  (angles.y * 57.295));
-		UART_Puts((uint8_t*)angle_y);
-		UART_Puts((uint8_t* )"0\r\n");
-	}
+	UART_Puts((uint8_t* )"$1;1;;");
+	sprintf(x,"%0.2f;",  global_data.acc_g.x);
+	UART_Puts((uint8_t*)x); //x
+	sprintf(y,"%0.2f;",  global_data.acc_g.y);
+	UART_Puts((uint8_t*)y); //y
+	sprintf(z,"%0.2f;",  global_data.acc_g.z);
+	UART_Puts((uint8_t*)z); //z
+	sprintf(roll,"%0.2f;",  global_data.gyro_rad.x);
+	UART_Puts((uint8_t*)roll); //roll
+	sprintf(nick,"%0.2f;",  global_data.gyro_rad.y);
+	UART_Puts((uint8_t*)nick); //nick
+	sprintf(yaw,"%0.2f;",  global_data.gyro_rad.z);
+	UART_Puts((uint8_t*)yaw); //yaw
+	sprintf(angle_x,"%0.2f;",  (global_data.attitude.x * 57.295));
+	UART_Puts((uint8_t*)angle_x);
+	sprintf(angle_y,"%0.2f;",  (global_data.attitude.y * 57.295));
+	UART_Puts((uint8_t*)angle_y);
+	UART_Puts((uint8_t* )"0\r\n");
 }
+
+

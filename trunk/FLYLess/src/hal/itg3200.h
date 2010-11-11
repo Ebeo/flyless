@@ -42,7 +42,7 @@
 
 #define OWNADDRESS 	0x30	// dummy address for the STM32
 #define ITGADDRESS  0xD0	// address of the ITG3200
-#define I2C_SPEED 	400000	// I2C Speed 400KHz
+#define I2C_SPEED 	100000	// I2C Speed 400KHz
 
 
 #define WHO_AM_I 			0x00
@@ -73,12 +73,15 @@ void ITG_I2C_Setup(void);
 /**
  * @brief Get gyro rate
  * @param *rate pointer to the buffer for the gyro values
- * Stores the gyro rate in rad/s
+ * Stores the gyro rate raw values
  * rate[0] = roll
  * rate[1] = nick
  * rate[2] = yaw
  */
-void ITG_GetRate(float_vect3* rate);
+void ITG_GetRate(int16_vect3* rate);
+
+void ITG_GetRAD(int16_vect3 rate_raw, float_vect3* rate_rad);
+void ITG_RefOffset(float_vect3* offset);
 
 /**
  * @brief Read register
