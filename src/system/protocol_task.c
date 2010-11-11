@@ -74,11 +74,13 @@ void PROTOCOL_Task( void *pvParameters )
 
 		int8_t x1,x2,x3,x4;
 
-		x1 = (int8_t) global_data.param[8];
+		x1 = (int8_t)global_data.param[8];
 		x2 = (int8_t)global_data.param[9];
 		x3 = (int8_t)global_data.param[10];
 		x4 = (int8_t)global_data.param[11];
- 		SERVO_SetValue(x1,x2,x3,x4);
+
+		SERVO_SetValue(x1,x2,x3,x4);
+
 
 	}
 }
@@ -134,9 +136,7 @@ void handle_mav_link_mess(void)
 								// Only write and emit changes if there is actually a difference
 								// AND only write if new value is NOT "not-a-number"
 								// AND is NOT infy
-								if (global_data.param[i] != set.param_value
-										&& !isnan(set.param_value)
-										&& !isinf(set.param_value))
+								if (global_data.param[i] != set.param_value)
 								{
 									global_data.param[i] = set.param_value;
 									// Report back new value
