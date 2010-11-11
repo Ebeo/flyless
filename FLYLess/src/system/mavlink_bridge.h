@@ -20,27 +20,20 @@
     along with FLYLess.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/**
- * @addtogroup  Driver
- * @{
- * @addtogroup  UART
- * @{
- * @file uart.h
- * @author Michael Bubestinger
- *
- * Headerfile for UART Interface
- */
+#ifndef MAVLINK_BRIDGE_H_
+#define MAVLINK_BRIDGE_H_
 
-#ifndef UART_PROTOCOL_H_
-#define UART_PROTOCOL_H_
 
-#include "stm32f10x.h"
+#define MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
-void UART_Protocol_Init();
-void UART_Puts(uint8_t* c);
-void UART_Send(uint8_t* c, uint8_t len);
-void UART_SendChar(uint8_t c);
-uint8_t UART_CharAvailable(void);
-uint8_t UART_GetChar(void);
+#include "global_data.h"
+#include "mavlink_types.h"
 
-#endif /* UART_PROTOCOL_H_ */
+
+
+static inline void comm_send_ch(mavlink_channel_t chan, uint8_t ch)
+{
+	UART_SendChar(ch);
+}
+
+#endif /* MAVLINK_BRIDGE_H_ */
