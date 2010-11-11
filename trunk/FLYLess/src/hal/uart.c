@@ -50,7 +50,7 @@ void UART_Puts(uint8_t* c)
 
 void UART_Protocol_Init()
 {
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA  | RCC_APB2Periph_AFIO | RCC_APB2Periph_USART1 , ENABLE);
+
 
 	GPIO_InitTypeDef GPIO_InitStructure;
 	USART_InitTypeDef USART_InitStructure;

@@ -29,11 +29,11 @@
 
 #include "led.h"
 #include "led_task.h"
+#include "uart.h"
 
 void LED_Task( void *pvParameters )
 {
 	uint8_t toggle = 0;
-
 	while(1)
 	{
 		vTaskDelay(ONE_SECOND/2);
