@@ -55,7 +55,6 @@ ErrorStatus ADXL_SPI_Setup(void)
 	SPI_InitTypeDef		SPI_InitStructure;
 	GPIO_InitTypeDef 	GPIO_InitStructure;
 
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOC | RCC_APB2Periph_SPI1 ,ENABLE);
 
 	/*
 	 * Chipselect
