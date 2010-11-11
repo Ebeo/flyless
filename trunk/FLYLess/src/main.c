@@ -34,11 +34,14 @@
 #include "queue.h"
 #include "semphr.h"
 
+#include "global_data.h"
+#include "mavlink_types.h"
 
 #include "led.h"
 #include "uart.h"
 #include "adxl345.h"
 #include "itg3200.h"
+#include "servo.h"
 
 
 #include "protocol_task.h"
@@ -84,6 +87,7 @@ int main(void)
 	/* UART Init */
 	UART_Protocol_Init();
 	UART_Puts((uint8_t* )"UUART: OK\r\n");
+
 	/* ADXL345 Init */
 	if(ADXL_SPI_Setup() != SUCCESS)
 	{
@@ -96,6 +100,8 @@ int main(void)
 	/* ITG 3200 Init */
 	/* no Fail-Check implemented */
 	ITG_I2C_Setup();
+	ITG_RefOffset(&global_data.param[PARAM_GYRO_OFF_X]);
+
 	UART_Puts((uint8_t* )"ITG 3200: OK\r\n");
 
 
@@ -112,13 +118,11 @@ int main(void)
 
 	UART_Puts((uint8_t* )"\r\nFailed! U have a problem!");
 	while(1);
-
 }
 
 
 void SetClock()
 {
-	GPIO_InitTypeDef GPIO_InitStructure;
 
 	RCC_DeInit();
 
@@ -130,28 +134,15 @@ void SetClock()
 
 
 	RCC_HSICmd(ENABLE);
-
 	RCC_PLLCmd(DISABLE);
 	RCC_PLLConfig(RCC_PLLSource_HSI_Div2,RCC_PLLMul_16); /* Sysclock 64MHz */
 	RCC_PLLCmd(ENABLE);
 
-	while (RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET)
-	{
-	}
+	while (RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET);
 
 	RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
 
-	while (RCC_GetSYSCLKSource() != 0x08)
-	{
-	}
-
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_AFIO , ENABLE);
-	RCC_MCOConfig(RCC_MCO_SYSCLK);
+	while (RCC_GetSYSCLKSource() != 0x08);
 
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2 | RCC_APB1Periph_I2C1 ,ENABLE);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC | RCC_APB2Periph_AFIO | RCC_APB2Periph_SPI1 | RCC_APB2Periph_USART1 ,ENABLE);

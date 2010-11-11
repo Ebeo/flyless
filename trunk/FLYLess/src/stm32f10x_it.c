@@ -20,21 +20,14 @@
   * <h2><center>&copy; COPYRIGHT 2010 STMicroelectronics</center></h2>
   */ 
 
-/* Includes ------------------------------------------------------------------*/
-#include "stm32f10x_it.h"
-
 /** @addtogroup Driver
   * @{
   * @addtogroup Interrupt Handlers
   * @{
   */
 
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
-/* Private function prototypes -----------------------------------------------*/
-/* Private functions ---------------------------------------------------------*/
+/* Includes ------------------------------------------------------------------*/
+#include "stm32f10x_it.h"
 
 /******************************************************************************/
 /*            Cortex-M3 Processor Exceptions Handlers                         */
@@ -143,6 +136,7 @@ void SysTick_Handler(void)
 /*  available peripheral interrupt handler's name please refer to the startup */
 /*  file (startup_stm32f10x_xx.s).                                            */
 /******************************************************************************/
+
 
 /**
   * @brief  This function handles PPP interrupt request.
