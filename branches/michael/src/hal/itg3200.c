@@ -39,6 +39,7 @@
 
 #include "stm32f10x_conf.h"
 #include "stm32f10x.h"
+#include "uart.h"
 
 #include "mav_vect.h"
 
@@ -267,8 +268,7 @@ void ITG_I2C_Setup()
 
 	uint16_t i;
 
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1,ENABLE);
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB |RCC_APB2Periph_AFIO,ENABLE);
+
 
     I2C_Cmd(I2C1, ENABLE);
   	I2C_InitStructure.I2C_Mode = I2C_Mode_I2C;
@@ -285,13 +285,13 @@ void ITG_I2C_Setup()
   	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
   	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
-
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_1);
     NVIC_InitStructure.NVIC_IRQChannel = I2C1_EV_IRQn;
  	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 3;
   	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
   	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   	NVIC_Init(&NVIC_InitStructure);
+
 
 	ITG_Write(PWR_MGM, 0x80);
 	for(i = 0;i<9999;i++);

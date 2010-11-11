@@ -66,14 +66,15 @@ void SetClock();
 */
 int main(void)
 {
-	SystemInit();
 
-	//mavlink_system_t mavlink_system;
+	GPIO_InitTypeDef GPIO_InitStructure;
 
 	/* Hardware Init */
-
 	/* Init clock system to 64MHz from internal RC-oscillator */
+
+	SystemInit();
 	SetClock();
+
 
 	/* Init LEDs and setup Blinktime to 1/2 second */
 	LED_Init();
@@ -81,9 +82,6 @@ int main(void)
 	/* reset global data values */
 	global_data_reset();
 	global_data_reset_param_defaults();
-
-
-	SERVO_Init();
 
 
 	/* UART Init */
@@ -107,14 +105,17 @@ int main(void)
 	UART_Puts((uint8_t* )"ITG 3200: OK\r\n");
 
 
+	SERVO_Init();
+
+
 	/* Create Tasks and start the scheduler */
 	UART_Puts((uint8_t* )"Now starting the scheduler!\r\n");
 
 	xTaskCreate( KALMAN_Task, 	( signed char * ) "KALMAN"	, configMINIMAL_STACK_SIZE * 2	 	,( void * ) NULL, tskKALMAN_PRIORITY 	, NULL );
 	xTaskCreate( PROTOCOL_Task, ( signed char * ) "PROT"	, configMINIMAL_STACK_SIZE * 2		,( void * ) NULL, tskPROTOCOL_PRIORITY 	, NULL );
 	xTaskCreate( LED_Task, 	  	( signed char * ) "LED"   	, configMINIMAL_STACK_SIZE 			,( void * ) NULL, tskLED_PRIORITY    	, NULL );
-
 	vTaskStartScheduler();
+
 	UART_Puts((uint8_t* )"\r\nFailed! U have a problem!");
 	while(1);
 }
@@ -142,6 +143,9 @@ void SetClock()
 	RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
 
 	while (RCC_GetSYSCLKSource() != 0x08);
+
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2 | RCC_APB1Periph_I2C1 ,ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC | RCC_APB2Periph_AFIO | RCC_APB2Periph_SPI1 | RCC_APB2Periph_USART1 ,ENABLE);
 }
 
 
