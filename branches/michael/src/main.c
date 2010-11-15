@@ -75,7 +75,8 @@ int main(void)
 	SystemInit();
 	SetClock();
 
-
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_1); /* defined State for NVIC Setup */
+	
 	/* Init LEDs and setup Blinktime to 1/2 second */
 	LED_Init();
 

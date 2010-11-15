@@ -285,7 +285,6 @@ void ITG_I2C_Setup()
   	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
   	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
-	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_1);
     NVIC_InitStructure.NVIC_IRQChannel = I2C1_EV_IRQn;
  	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 3;
   	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;

@@ -97,7 +97,6 @@ void UART_Protocol_Init()
   	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
   	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
-	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_0);
 	NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
