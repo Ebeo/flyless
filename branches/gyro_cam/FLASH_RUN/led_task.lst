@@ -1,0 +1,138 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 18, 4
+  12              		.thumb
+  13              		.file	"led_task.c"
+  21              	.Ltext0:
+  22              		.cfi_sections	.debug_frame
+  23              		.section	.text.LED_Task,"ax",%progbits
+  24              		.align	1
+  25              		.global	LED_Task
+  26              		.thumb
+  27              		.thumb_func
+  29              	LED_Task:
+  30              	.LFB29:
+  31              		.file 1 "src/system/led_task.c"
+   1:src/system/led_task.c **** /*
+   2:src/system/led_task.c **** 	FLYLess
+   3:src/system/led_task.c **** 	flyless.wikidot.com
+   4:src/system/led_task.c **** 	contact: <m.bubestinger@gmail.com>
+   5:src/system/led_task.c **** 
+   6:src/system/led_task.c **** 
+   7:src/system/led_task.c ****   	This file is part of FLYless.
+   8:src/system/led_task.c **** 
+   9:src/system/led_task.c ****     FLYLess is free software: you can redistribute it and/or modify
+  10:src/system/led_task.c ****     it under the terms of the GNU General Public License as published by
+  11:src/system/led_task.c ****     the Free Software Foundation, either version 3 of the License, or
+  12:src/system/led_task.c ****     (at your option) any later version.
+  13:src/system/led_task.c **** 
+  14:src/system/led_task.c ****     FLYLess is distributed in the hope that it will be useful,
+  15:src/system/led_task.c ****     but WITHOUT ANY WARRANTY; without even the implied warranty of
+  16:src/system/led_task.c ****     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  17:src/system/led_task.c ****     GNU General Public License for more details.
+  18:src/system/led_task.c **** 
+  19:src/system/led_task.c ****     You should have received a copy of the GNU General Public License
+  20:src/system/led_task.c ****     along with FLYLess.  If not, see <http://www.gnu.org/licenses/>.
+  21:src/system/led_task.c **** */
+  22:src/system/led_task.c **** 
+  23:src/system/led_task.c **** 
+  24:src/system/led_task.c **** #include "FreeRTOS.h"
+  25:src/system/led_task.c **** #include "task.h"
+  26:src/system/led_task.c **** 
+  27:src/system/led_task.c **** #include "stm32f10x.h"
+  28:src/system/led_task.c **** #include "stm32f10x_gpio.h"
+  29:src/system/led_task.c **** 
+  30:src/system/led_task.c **** #include "led.h"
+  31:src/system/led_task.c **** #include "led_task.h"
+  32:src/system/led_task.c **** #include "uart.h"
+  33:src/system/led_task.c **** 
+  34:src/system/led_task.c **** void LED_Task( void *pvParameters )
+  35:src/system/led_task.c **** {
+  32              		.loc 1 35 0
+  33              		.cfi_startproc
+  34              		@ args = 0, pretend = 0, frame = 0
+  35              		@ frame_needed = 0, uses_anonymous_args = 0
+  36              	.LVL0:
+  37 0000 10B5     		push	{r4, lr}
+  38              	.LCFI0:
+  39              		.cfi_def_cfa_offset 8
+  40              	.LVL1:
+  41              	.L6:
+  36:src/system/led_task.c **** 	uint8_t toggle = 0;
+  42              		.loc 1 36 0
+  43 0002 0024     		movs	r4, #0
+  44              		.cfi_offset 14, -4
+  45              		.cfi_offset 4, -8
+  46              	.LVL2:
+  47              	.L5:
+  37:src/system/led_task.c **** 	while(1)
+  38:src/system/led_task.c **** 	{
+  39:src/system/led_task.c **** 		vTaskDelay(ONE_SECOND);
+  48              		.loc 1 39 0
+  49 0004 4FF47A70 		mov	r0, #1000
+  50 0008 FFF7FEFF 		bl	vTaskDelay
+  40:src/system/led_task.c **** 		if(toggle == 1)
+  51              		.loc 1 40 0
+  52 000c 44B1     		cbz	r4, .L3
+  41:src/system/led_task.c **** 		{
+  42:src/system/led_task.c **** 
+  43:src/system/led_task.c **** 			GPIO_ResetBits(GPIOB,GPIO_Pin_1);
+  53              		.loc 1 43 0
+  54 000e 0221     		movs	r1, #2
+  55 0010 0848     		ldr	r0, .L7
+  56 0012 FFF7FEFF 		bl	GPIO_ResetBits
+  44:src/system/led_task.c **** 			GPIO_SetBits(GPIOB,GPIO_Pin_0);
+  57              		.loc 1 44 0
+  58 0016 0748     		ldr	r0, .L7
+  59 0018 2146     		mov	r1, r4
+  60 001a FFF7FEFF 		bl	GPIO_SetBits
+  61              	.LVL3:
+  62 001e F0E7     		b	.L6
+  63              	.LVL4:
+  64              	.L3:
+  45:src/system/led_task.c **** 			toggle = 0;
+  46:src/system/led_task.c **** 		}
+  47:src/system/led_task.c **** 		else if(toggle == 0)
+  48:src/system/led_task.c **** 		{
+  49:src/system/led_task.c **** 			GPIO_ResetBits(GPIOB,GPIO_Pin_0);
+  65              		.loc 1 49 0
+  66 0020 0448     		ldr	r0, .L7
+  67 0022 0121     		movs	r1, #1
+  68 0024 FFF7FEFF 		bl	GPIO_ResetBits
+  50:src/system/led_task.c **** 			GPIO_SetBits(GPIOB,GPIO_Pin_1);
+  69              		.loc 1 50 0
+  70 0028 0248     		ldr	r0, .L7
+  71 002a 0221     		movs	r1, #2
+  72 002c FFF7FEFF 		bl	GPIO_SetBits
+  73              	.LVL5:
+  51:src/system/led_task.c **** 			toggle = 1;
+  74              		.loc 1 51 0
+  75 0030 0124     		movs	r4, #1
+  76 0032 E7E7     		b	.L5
+  77              	.L8:
+  78              		.align	2
+  79              	.L7:
+  80 0034 000C0140 		.word	1073810432
+  81              		.cfi_endproc
+  82              	.LFE29:
+  84              		.text
+  85              	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 led_task.c
+C:\Users\MICHAE~1\AppData\Local\Temp\ccrADYeM.s:24     .text.LED_Task:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccrADYeM.s:29     .text.LED_Task:00000000 LED_Task
+C:\Users\MICHAE~1\AppData\Local\Temp\ccrADYeM.s:80     .text.LED_Task:00000034 $d
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+vTaskDelay
+GPIO_ResetBits
+GPIO_SetBits

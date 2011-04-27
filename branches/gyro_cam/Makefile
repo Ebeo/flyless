@@ -30,8 +30,6 @@ RTOSINC  = $(RTOS)/include
 
 
 PIXHAWK 	= ./src/pixhawk
-MAVLINK 	= ./src/mavlink
-MAVLINKCOM 	= ./src/mavlink/common/
 HAL 		= ./src/hal
 SYSTEM  	= ./src/system
 
@@ -48,6 +46,7 @@ CUSTOMINCDIR += ./src $(PIXHAWK) $(HAL) $(SYSTEM) $(MAVLINK) $(MAVLINKCOM)
 SRC   = ./src/main.c
 SRC += ./src/stm32f10x_it.c
 SRC += ./src/syscalls.c
+SRC += ./src/pid.c
 
 ## HAL Files
 SRC += ./src/hal/adxl345.c
@@ -63,6 +62,7 @@ SRC += ./src/pixhawk/attitude_observer.c
 SRC += ./src/system/kalman_task.c
 SRC += ./src/system/protocol_task.c
 SRC += ./src/system/led_task.c
+SRC += ./src/system/control_task.c
 
 ## USED PERIPH Files
 SRC += $(STMSPDSRCDIR)/stm32f10x_gpio.c

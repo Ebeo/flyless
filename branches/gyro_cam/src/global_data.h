@@ -24,49 +24,14 @@
 #define GLOBAL_DATA_H_
 
 #include "stm32f10x.h"
-
 #include "mav_vect.h"
-#include "mavlink_types.h"
+
 
 #include <string.h>
 
 
-
-#define ONBOARD_PARAM_NAME_LENGTH 15
-mavlink_system_t mavlink_system;
-
-
-enum
-{
-	PARAM_SYSTEM_ID = 0,
-	PARAM_COMPONENT_ID,
-	PARAM_SYSTEM_TYPE,
-	PARAM_SW_VERSION,
-	PARAM_UART_BAUD,
-
-	PARAM_GYRO_OFF_X,
-	PARAM_GYRO_OFF_Y,
-	PARAM_GYRO_OFF_Z,
-
-	PARAM_SERVO_C0,
-	PARAM_SERVO_C1,
-	PARAM_SERVO_C2,
-	PARAM_SERVO_C3,
-
-	ONBOARD_PARAM_COUNT
-///< Store parameters in EEPROM and expose them over MAVLink paramter interface
-} global_param_id;
-
-
-
-
 struct global_struct
 {
-	/**********************
-	 * Global Parameters for MAVLINK
-	 **********************/
-	float param[ONBOARD_PARAM_COUNT];
-	char param_name[ONBOARD_PARAM_COUNT][ONBOARD_PARAM_NAME_LENGTH];
 
 	/**********************
 	 * System State
@@ -76,7 +41,7 @@ struct global_struct
 	uint8_t		nav;
 	uint8_t		state;
 
-	float_vect3 attitude;		/* Attitude euler Angles */
+	float_vect3	attitude;		/* Attitude euler Angles */
 	float		height;			/* Estimated Height above system start */
 
 
@@ -100,21 +65,24 @@ struct global_struct
 
 	int16_vect3	magnet_raw;		/* Magnet raw values */
 
+	uint32_t 	pid_output;		/* Stellwert für Servo */
+	uint16_t	pid_ist;
+	uint16_t	pid_soll;
+
 }global_data;
 
 
 static inline void global_data_reset(void)
 {
-	global_data.mode  = MAV_STATE_UNINIT;
-	global_data.nav   = MAV_NAV_GROUNDED;
-	global_data.state = MAV_STATE_UNINIT;
 
 	global_data.acc_off.x = 0;
 	global_data.acc_off.y = 0;
 	global_data.acc_off.z = 0;
+
 	global_data.acc_raw.x = 0;
 	global_data.acc_raw.y = 0;
 	global_data.acc_raw.z = 0;
+
 	global_data.acc_g.x = 0;
 	global_data.acc_g.y = 0;
 	global_data.acc_g.z = 0;
@@ -136,47 +104,10 @@ static inline void global_data_reset(void)
 	global_data.magnet_raw.x = 0;
 	global_data.magnet_raw.y = 0;
 	global_data.magnet_raw.z = 0;
+
+	global_data.pid_output = 0;
+	global_data.pid_ist = 0;
+	global_data.pid_soll = 100;
 }
 
-static inline void global_data_reset_param_defaults(void)
-{
-	global_data.param[PARAM_SYSTEM_ID] = 010;
-	strcpy(global_data.param_name[PARAM_SYSTEM_ID], "SYS_ID");
-
-	global_data.param[PARAM_COMPONENT_ID] = 200;
-	strcpy(global_data.param_name[PARAM_COMPONENT_ID], "SYS_COMP_ID");
-
-	global_data.param[PARAM_SYSTEM_TYPE] = MAV_HELICOPTER;
-	strcpy(global_data.param_name[PARAM_SYSTEM_TYPE], "SYS_TYPE");
-
-	global_data.param[PARAM_SW_VERSION] = 0000;
-	strcpy(global_data.param_name[PARAM_SW_VERSION], "SYS_SW_VER");
-
-	global_data.param[PARAM_UART_BAUD] = 115200;
-	strcpy(global_data.param_name[PARAM_UART_BAUD], "UART_BAUD");
-
-	global_data.param[PARAM_GYRO_OFF_X] = 0;
-	strcpy(global_data.param_name[PARAM_GYRO_OFF_X], "GYRO_OFF_X");
-
-	global_data.param[PARAM_GYRO_OFF_Y] = 0;
-	strcpy(global_data.param_name[PARAM_GYRO_OFF_Y], "GYRO_OFF_Y");
-
-	global_data.param[PARAM_GYRO_OFF_Z] = 0;
-	strcpy(global_data.param_name[PARAM_GYRO_OFF_Z], "GYRO_OFF_Z");
-
-	global_data.param[PARAM_SERVO_C0] = 0;
-	strcpy(global_data.param_name[PARAM_SERVO_C0], "SERVO_C0");
-
-	global_data.param[PARAM_SERVO_C1] = 0;
-	strcpy(global_data.param_name[PARAM_SERVO_C1], "SERVO_C1");
-
-	global_data.param[PARAM_SERVO_C2] = 0;
-	strcpy(global_data.param_name[PARAM_SERVO_C2], "SERVO_C2");
-
-	global_data.param[PARAM_SERVO_C3] = 0;
-	strcpy(global_data.param_name[PARAM_SERVO_C3], "SERVO_C3");
-
-	mavlink_system.sysid = global_data.param[PARAM_SYSTEM_ID];
-	mavlink_system.compid = global_data.param[PARAM_COMPONENT_ID];
-}
 #endif /* GLOBAL_DATA_H_ */

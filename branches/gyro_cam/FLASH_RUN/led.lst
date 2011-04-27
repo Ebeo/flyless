@@ -1,0 +1,120 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 18, 4
+  12              		.thumb
+  13              		.file	"led.c"
+  21              	.Ltext0:
+  22              		.cfi_sections	.debug_frame
+  23              		.section	.text.LED_Init,"ax",%progbits
+  24              		.align	1
+  25              		.global	LED_Init
+  26              		.thumb
+  27              		.thumb_func
+  29              	LED_Init:
+  30              	.LFB29:
+  31              		.file 1 "src/hal/led.c"
+   1:src/hal/led.c **** /*
+   2:src/hal/led.c **** 	FLYLess
+   3:src/hal/led.c **** 	flyless.wikidot.com
+   4:src/hal/led.c **** 	contact: <m.bubestinger@gmail.com>
+   5:src/hal/led.c **** 
+   6:src/hal/led.c **** 
+   7:src/hal/led.c ****   	This file is part of FLYless.
+   8:src/hal/led.c **** 
+   9:src/hal/led.c ****     FLYLess is free software: you can redistribute it and/or modify
+  10:src/hal/led.c ****     it under the terms of the GNU General Public License as published by
+  11:src/hal/led.c ****     the Free Software Foundation, either version 3 of the License, or
+  12:src/hal/led.c ****     (at your option) any later version.
+  13:src/hal/led.c **** 
+  14:src/hal/led.c ****     FLYLess is distributed in the hope that it will be useful,
+  15:src/hal/led.c ****     but WITHOUT ANY WARRANTY; without even the implied warranty of
+  16:src/hal/led.c ****     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  17:src/hal/led.c ****     GNU General Public License for more details.
+  18:src/hal/led.c **** 
+  19:src/hal/led.c ****     You should have received a copy of the GNU General Public License
+  20:src/hal/led.c ****     along with FLYLess.  If not, see <http://www.gnu.org/licenses/>.
+  21:src/hal/led.c **** */
+  22:src/hal/led.c **** 
+  23:src/hal/led.c **** 
+  24:src/hal/led.c **** /**
+  25:src/hal/led.c ****  * @file led.c
+  26:src/hal/led.c ****  * @author Michael Bubestinger
+  27:src/hal/led.c ****  * C-file for LEDs  on FLYless board
+  28:src/hal/led.c ****  */
+  29:src/hal/led.c **** 
+  30:src/hal/led.c **** 
+  31:src/hal/led.c **** #include "stm32f10x.h"
+  32:src/hal/led.c **** #include "stm32f10x_conf.h"
+  33:src/hal/led.c **** 
+  34:src/hal/led.c **** #include "led.h"
+  35:src/hal/led.c **** 
+  36:src/hal/led.c **** 
+  37:src/hal/led.c **** 
+  38:src/hal/led.c **** void LED_Init()
+  39:src/hal/led.c **** {
+  32              		.loc 1 39 0
+  33              		.cfi_startproc
+  34              		@ args = 0, pretend = 0, frame = 8
+  35              		@ frame_needed = 0, uses_anonymous_args = 0
+  36 0000 07B5     		push	{r0, r1, r2, lr}
+  37              	.LCFI0:
+  38              		.cfi_def_cfa_offset 16
+  40:src/hal/led.c **** 	GPIO_InitTypeDef GPIO_InitStructure;
+  41:src/hal/led.c **** 
+  42:src/hal/led.c **** 
+  43:src/hal/led.c **** 
+  44:src/hal/led.c **** 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;
+  39              		.loc 1 44 0
+  40 0002 1423     		movs	r3, #20
+  41 0004 8DF80730 		strb	r3, [sp, #7]
+  45:src/hal/led.c ****  	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1;
+  46:src/hal/led.c ****   	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  47:src/hal/led.c ****   	GPIO_Init(GPIOB, &GPIO_InitStructure);
+  42              		.loc 1 47 0
+  43 0008 0448     		ldr	r0, .L2
+  44              		.cfi_offset 14, -4
+  45              		.cfi_offset 2, -8
+  46              		.cfi_offset 1, -12
+  47              		.cfi_offset 0, -16
+  45:src/hal/led.c ****  	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1;
+  48              		.loc 1 45 0
+  49 000a 113B     		subs	r3, r3, #17
+  50              		.loc 1 47 0
+  51 000c 01A9     		add	r1, sp, #4
+  45:src/hal/led.c ****  	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1;
+  52              		.loc 1 45 0
+  53 000e ADF80430 		strh	r3, [sp, #4]	@ movhi
+  46:src/hal/led.c ****   	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  54              		.loc 1 46 0
+  55 0012 8DF80630 		strb	r3, [sp, #6]
+  56              		.loc 1 47 0
+  57 0016 FFF7FEFF 		bl	GPIO_Init
+  48:src/hal/led.c **** 
+  49:src/hal/led.c **** }
+  58              		.loc 1 49 0
+  59 001a 0EBD     		pop	{r1, r2, r3, pc}
+  60              	.L3:
+  61              		.align	2
+  62              	.L2:
+  63 001c 000C0140 		.word	1073810432
+  64              		.cfi_endproc
+  65              	.LFE29:
+  67              		.text
+  68              	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 led.c
+C:\Users\MICHAE~1\AppData\Local\Temp\ccLLHUfb.s:24     .text.LED_Init:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccLLHUfb.s:29     .text.LED_Init:00000000 LED_Init
+C:\Users\MICHAE~1\AppData\Local\Temp\ccLLHUfb.s:63     .text.LED_Init:0000001c $d
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+GPIO_Init

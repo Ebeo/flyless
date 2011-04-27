@@ -1,0 +1,1145 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 18, 4
+  12              		.thumb
+  13              		.file	"adxl345.c"
+  21              	.Ltext0:
+  22              		.cfi_sections	.debug_frame
+  23              		.section	.text.ADXL_Clr_Rcv_Buf,"ax",%progbits
+  24              		.align	1
+  25              		.global	ADXL_Clr_Rcv_Buf
+  26              		.thumb
+  27              		.thumb_func
+  29              	ADXL_Clr_Rcv_Buf:
+  30              	.LFB33:
+  31              		.file 1 "src/hal/adxl345.c"
+   1:src/hal/adxl345.c **** /*
+   2:src/hal/adxl345.c **** 	FLYLess
+   3:src/hal/adxl345.c **** 	flyless.wikidot.com
+   4:src/hal/adxl345.c **** 	contact: <m.bubestinger@gmail.com>
+   5:src/hal/adxl345.c **** 
+   6:src/hal/adxl345.c **** 
+   7:src/hal/adxl345.c ****   	This file is part of FLYless.
+   8:src/hal/adxl345.c **** 
+   9:src/hal/adxl345.c ****     FLYLess is free software: you can redistribute it and/or modify
+  10:src/hal/adxl345.c ****     it under the terms of the GNU General Public License as published by
+  11:src/hal/adxl345.c ****     the Free Software Foundation, either version 3 of the License, or
+  12:src/hal/adxl345.c ****     (at your option) any later version.
+  13:src/hal/adxl345.c **** 
+  14:src/hal/adxl345.c ****     FLYLess is distributed in the hope that it will be useful,
+  15:src/hal/adxl345.c ****     but WITHOUT ANY WARRANTY; without even the implied warranty of
+  16:src/hal/adxl345.c ****     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  17:src/hal/adxl345.c ****     GNU General Public License for more details.
+  18:src/hal/adxl345.c **** 
+  19:src/hal/adxl345.c ****     You should have received a copy of the GNU General Public License
+  20:src/hal/adxl345.c ****     along with FLYLess.  If not, see <http://www.gnu.org/licenses/>.
+  21:src/hal/adxl345.c **** */
+  22:src/hal/adxl345.c **** 
+  23:src/hal/adxl345.c **** 
+  24:src/hal/adxl345.c **** /**
+  25:src/hal/adxl345.c ****  * @file adxl345.c
+  26:src/hal/adxl345.c ****  * @author Michael Bubestinger
+  27:src/hal/adxl345.c ****  * C-file for Analog-Device ADXL345
+  28:src/hal/adxl345.c ****  * Datasheet: http://www.analog.com/static/imported-files/data_sheets/ADXL345.pdf
+  29:src/hal/adxl345.c ****  */
+  30:src/hal/adxl345.c **** 
+  31:src/hal/adxl345.c **** #include "adxl345.h"
+  32:src/hal/adxl345.c **** 
+  33:src/hal/adxl345.c **** #include "stm32f10x.h"
+  34:src/hal/adxl345.c **** #include "stm32f10x_conf.h"
+  35:src/hal/adxl345.c **** #include "mav_vect.h"
+  36:src/hal/adxl345.c **** 
+  37:src/hal/adxl345.c **** #include <math.h>
+  38:src/hal/adxl345.c **** 
+  39:src/hal/adxl345.c **** /**
+  40:src/hal/adxl345.c ****  * @brief macro for selecting the ADXL345
+  41:src/hal/adxl345.c ****  */
+  42:src/hal/adxl345.c **** #define ADXL_CS_LOW		GPIO_WriteBit(GPIOA,GPIO_Pin_4,Bit_RESET);
+  43:src/hal/adxl345.c **** /**
+  44:src/hal/adxl345.c ****  * @brief macro for releasing the ADXL345
+  45:src/hal/adxl345.c ****  */
+  46:src/hal/adxl345.c **** #define ADXL_CS_HIGH	GPIO_WriteBit(GPIOA,GPIO_Pin_4,Bit_SET);
+  47:src/hal/adxl345.c **** 
+  48:src/hal/adxl345.c **** 
+  49:src/hal/adxl345.c **** ErrorStatus ADXL_SPI_Setup(void)
+  50:src/hal/adxl345.c **** {
+  51:src/hal/adxl345.c **** 
+  52:src/hal/adxl345.c **** 	/*
+  53:src/hal/adxl345.c **** 	 * Enable CLOCKs and initialize the GPIO and SPI structures for our interface
+  54:src/hal/adxl345.c **** 	 */
+  55:src/hal/adxl345.c **** 	SPI_InitTypeDef		SPI_InitStructure;
+  56:src/hal/adxl345.c **** 	GPIO_InitTypeDef 	GPIO_InitStructure;
+  57:src/hal/adxl345.c **** 
+  58:src/hal/adxl345.c **** 
+  59:src/hal/adxl345.c **** 	/*
+  60:src/hal/adxl345.c **** 	 * Chipselect
+  61:src/hal/adxl345.c **** 	 */
+  62:src/hal/adxl345.c **** 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
+  63:src/hal/adxl345.c **** 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  64:src/hal/adxl345.c ****   	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+  65:src/hal/adxl345.c ****   	GPIO_Init(GPIOA, &GPIO_InitStructure);
+  66:src/hal/adxl345.c **** 
+  67:src/hal/adxl345.c ****   	/*
+  68:src/hal/adxl345.c ****   	 * MISO
+  69:src/hal/adxl345.c ****   	 */
+  70:src/hal/adxl345.c **** 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6 ;
+  71:src/hal/adxl345.c **** 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  72:src/hal/adxl345.c ****   	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+  73:src/hal/adxl345.c ****   	GPIO_Init(GPIOA, &GPIO_InitStructure);
+  74:src/hal/adxl345.c **** 
+  75:src/hal/adxl345.c ****   	/*
+  76:src/hal/adxl345.c ****   	 * MOSI and Clock
+  77:src/hal/adxl345.c ****   	 */
+  78:src/hal/adxl345.c **** 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_7;
+  79:src/hal/adxl345.c **** 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  80:src/hal/adxl345.c ****   	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+  81:src/hal/adxl345.c ****   	GPIO_Init(GPIOA, &GPIO_InitStructure);
+  82:src/hal/adxl345.c **** 
+  83:src/hal/adxl345.c ****   	/*
+  84:src/hal/adxl345.c ****   	 * Interrupt lines
+  85:src/hal/adxl345.c ****   	 */
+  86:src/hal/adxl345.c **** 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_14 | GPIO_Pin_15 ;
+  87:src/hal/adxl345.c **** 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  88:src/hal/adxl345.c ****   	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+  89:src/hal/adxl345.c ****   	GPIO_Init(GPIOC, &GPIO_InitStructure);
+  90:src/hal/adxl345.c **** 
+  91:src/hal/adxl345.c ****   	/*
+  92:src/hal/adxl345.c ****   	 * SPI Config
+  93:src/hal/adxl345.c ****   	 */
+  94:src/hal/adxl345.c **** 	SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
+  95:src/hal/adxl345.c ****   	SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
+  96:src/hal/adxl345.c ****   	SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;
+  97:src/hal/adxl345.c ****   	SPI_InitStructure.SPI_CPOL = SPI_CPOL_High;
+  98:src/hal/adxl345.c ****   	SPI_InitStructure.SPI_CPHA = SPI_CPHA_2Edge;
+  99:src/hal/adxl345.c **** 	SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;
+ 100:src/hal/adxl345.c **** 	SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_16;
+ 101:src/hal/adxl345.c **** 	SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
+ 102:src/hal/adxl345.c ****   	SPI_InitStructure.SPI_CRCPolynomial = 7;
+ 103:src/hal/adxl345.c ****   	SPI_Init(SPI1, &SPI_InitStructure);
+ 104:src/hal/adxl345.c **** 
+ 105:src/hal/adxl345.c ****   	/*
+ 106:src/hal/adxl345.c ****   	 * start the interface
+ 107:src/hal/adxl345.c ****   	 */
+ 108:src/hal/adxl345.c ****    	SPI_Cmd(SPI1,ENABLE);
+ 109:src/hal/adxl345.c **** 
+ 110:src/hal/adxl345.c ****    	/*
+ 111:src/hal/adxl345.c ****    	 * check if the DEVID is matching 0xE5 (taken from the datasheet)
+ 112:src/hal/adxl345.c ****    	 * if not stop everything and return an error!
+ 113:src/hal/adxl345.c ****    	 */
+ 114:src/hal/adxl345.c ****    	if( ADXL_ReadByte(DEVID) != 0xE5) return ERROR;
+ 115:src/hal/adxl345.c **** 
+ 116:src/hal/adxl345.c ****    	/*
+ 117:src/hal/adxl345.c ****    	 * power up the sensor and switch to the right dataformat
+ 118:src/hal/adxl345.c ****    	 */
+ 119:src/hal/adxl345.c **** 	ADXL_Write(POWER_CTL,0x08);
+ 120:src/hal/adxl345.c **** 	ADXL_Write(DATA_FORMAT,0x0B);
+ 121:src/hal/adxl345.c **** 
+ 122:src/hal/adxl345.c **** 	/*
+ 123:src/hal/adxl345.c **** 	 * add offset values to the output of the ADXL345...(all handled by the device itself
+ 124:src/hal/adxl345.c **** 	 */
+ 125:src/hal/adxl345.c **** 	ADXL_Write(OFSX,X_OFF);
+ 126:src/hal/adxl345.c **** 	ADXL_Write(OFSY,Y_OFF);
+ 127:src/hal/adxl345.c **** 	ADXL_Write(OFSZ,Z_OFF);
+ 128:src/hal/adxl345.c **** 
+ 129:src/hal/adxl345.c **** 	/*
+ 130:src/hal/adxl345.c **** 	 * everything went fine
+ 131:src/hal/adxl345.c **** 	 */
+ 132:src/hal/adxl345.c **** 	return SUCCESS;
+ 133:src/hal/adxl345.c **** }
+ 134:src/hal/adxl345.c **** 
+ 135:src/hal/adxl345.c **** void ADXL_Write(uint8_t reg, uint8_t byte)
+ 136:src/hal/adxl345.c **** {
+ 137:src/hal/adxl345.c **** 	/*
+ 138:src/hal/adxl345.c **** 	 * select the ADXL345
+ 139:src/hal/adxl345.c **** 	 */
+ 140:src/hal/adxl345.c **** 	ADXL_CS_LOW;
+ 141:src/hal/adxl345.c **** 	/*
+ 142:src/hal/adxl345.c **** 	 * write the register address
+ 143:src/hal/adxl345.c **** 	 */
+ 144:src/hal/adxl345.c **** 	SPI_I2S_SendData(SPI1, ADXL_W | reg);
+ 145:src/hal/adxl345.c **** 	/*
+ 146:src/hal/adxl345.c **** 	 * clr receive buffer
+ 147:src/hal/adxl345.c **** 	 */
+ 148:src/hal/adxl345.c **** 	ADXL_Clr_Rcv_Buf();
+ 149:src/hal/adxl345.c **** 	/*
+ 150:src/hal/adxl345.c **** 	 * wait for finish
+ 151:src/hal/adxl345.c **** 	 */
+ 152:src/hal/adxl345.c **** 	while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
+ 153:src/hal/adxl345.c **** 	/*
+ 154:src/hal/adxl345.c **** 	 * send the data
+ 155:src/hal/adxl345.c **** 	 */
+ 156:src/hal/adxl345.c **** 	SPI_I2S_SendData(SPI1, byte);
+ 157:src/hal/adxl345.c **** 	/*
+ 158:src/hal/adxl345.c **** 	 * clr receive buffer
+ 159:src/hal/adxl345.c **** 	 */
+ 160:src/hal/adxl345.c **** 	ADXL_Clr_Rcv_Buf();
+ 161:src/hal/adxl345.c **** 	/*
+ 162:src/hal/adxl345.c **** 	 * wait for finish
+ 163:src/hal/adxl345.c **** 	 */
+ 164:src/hal/adxl345.c **** 	while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY) == SET);
+ 165:src/hal/adxl345.c **** 	/*
+ 166:src/hal/adxl345.c **** 	 * deselect the ADXL345
+ 167:src/hal/adxl345.c **** 	 */
+ 168:src/hal/adxl345.c **** 	ADXL_CS_HIGH;
+ 169:src/hal/adxl345.c **** }
+ 170:src/hal/adxl345.c **** 
+ 171:src/hal/adxl345.c **** uint8_t ADXL_ReadByte(uint8_t reg)
+ 172:src/hal/adxl345.c **** {
+ 173:src/hal/adxl345.c **** 	uint8_t data;
+ 174:src/hal/adxl345.c **** 
+ 175:src/hal/adxl345.c **** 	/*
+ 176:src/hal/adxl345.c **** 	 * select the ADXL345
+ 177:src/hal/adxl345.c **** 	 */
+ 178:src/hal/adxl345.c **** 	ADXL_CS_LOW;
+ 179:src/hal/adxl345.c **** 	/*
+ 180:src/hal/adxl345.c **** 	 * write the register address with the READ bit
+ 181:src/hal/adxl345.c **** 	 */
+ 182:src/hal/adxl345.c **** 	SPI_I2S_SendData(SPI1, ADXL_R | reg);
+ 183:src/hal/adxl345.c **** 	/*
+ 184:src/hal/adxl345.c **** 	 * clr receive buffer
+ 185:src/hal/adxl345.c **** 	 */
+ 186:src/hal/adxl345.c **** 	ADXL_Clr_Rcv_Buf();
+ 187:src/hal/adxl345.c **** 	/*
+ 188:src/hal/adxl345.c **** 	 * wait for finish
+ 189:src/hal/adxl345.c **** 	 */
+ 190:src/hal/adxl345.c **** 	while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
+ 191:src/hal/adxl345.c **** 	/*
+ 192:src/hal/adxl345.c **** 	 * send dummy byte for the clocks!
+ 193:src/hal/adxl345.c **** 	 */
+ 194:src/hal/adxl345.c **** 	SPI_I2S_SendData(SPI1, 0xFF);
+ 195:src/hal/adxl345.c **** 	/*
+ 196:src/hal/adxl345.c **** 	 * wait for finish
+ 197:src/hal/adxl345.c **** 	 */
+ 198:src/hal/adxl345.c **** 	while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_RXNE) == RESET);
+ 199:src/hal/adxl345.c **** 	/*
+ 200:src/hal/adxl345.c **** 	 * read the received data from the register
+ 201:src/hal/adxl345.c **** 	 */
+ 202:src/hal/adxl345.c **** 	data = SPI_I2S_ReceiveData(SPI1);
+ 203:src/hal/adxl345.c **** 	/*
+ 204:src/hal/adxl345.c **** 	 * wait for finish
+ 205:src/hal/adxl345.c **** 	 */
+ 206:src/hal/adxl345.c **** 	while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY) == SET);
+ 207:src/hal/adxl345.c **** 	/*
+ 208:src/hal/adxl345.c **** 	 * deselect the ADXL345
+ 209:src/hal/adxl345.c **** 	 */
+ 210:src/hal/adxl345.c **** 	ADXL_CS_HIGH;
+ 211:src/hal/adxl345.c **** 
+ 212:src/hal/adxl345.c **** 	return data;
+ 213:src/hal/adxl345.c **** }
+ 214:src/hal/adxl345.c **** 
+ 215:src/hal/adxl345.c **** 
+ 216:src/hal/adxl345.c **** void ADXL_ReadSeq(uint8_t reg,uint8_t *data,uint8_t count)
+ 217:src/hal/adxl345.c **** {
+ 218:src/hal/adxl345.c **** 	uint8_t i = 0;
+ 219:src/hal/adxl345.c **** 
+ 220:src/hal/adxl345.c **** 	/*
+ 221:src/hal/adxl345.c **** 	 * select the ADXL345
+ 222:src/hal/adxl345.c **** 	 */
+ 223:src/hal/adxl345.c **** 	ADXL_CS_LOW;
+ 224:src/hal/adxl345.c **** 
+ 225:src/hal/adxl345.c **** 	/*
+ 226:src/hal/adxl345.c **** 	 * send register address including Read-Bit and Multible Bytes-Bit
+ 227:src/hal/adxl345.c **** 	 */
+ 228:src/hal/adxl345.c **** 	SPI_I2S_SendData(SPI1, ADXL_R | ADXL_MB | reg);
+ 229:src/hal/adxl345.c **** 	/*
+ 230:src/hal/adxl345.c **** 	 * clr receive buffer
+ 231:src/hal/adxl345.c **** 	 */
+ 232:src/hal/adxl345.c **** 	ADXL_Clr_Rcv_Buf();
+ 233:src/hal/adxl345.c **** 	/*
+ 234:src/hal/adxl345.c **** 	 * wait for finish
+ 235:src/hal/adxl345.c **** 	 */
+ 236:src/hal/adxl345.c **** 	while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
+ 237:src/hal/adxl345.c **** 
+ 238:src/hal/adxl345.c **** 	/*
+ 239:src/hal/adxl345.c **** 	 * read all data
+ 240:src/hal/adxl345.c **** 	 */
+ 241:src/hal/adxl345.c **** 	while(i < count)
+ 242:src/hal/adxl345.c **** 	{
+ 243:src/hal/adxl345.c **** 		SPI_I2S_SendData(SPI1, 0xFF);
+ 244:src/hal/adxl345.c **** 		while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_RXNE) == RESET);
+ 245:src/hal/adxl345.c **** 		*data = SPI_I2S_ReceiveData(SPI1);
+ 246:src/hal/adxl345.c **** 		data++;
+ 247:src/hal/adxl345.c **** 		i++;
+ 248:src/hal/adxl345.c **** 	}
+ 249:src/hal/adxl345.c **** 	while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY) == SET);
+ 250:src/hal/adxl345.c **** 	/*
+ 251:src/hal/adxl345.c **** 	 * deselect the ADXL345
+ 252:src/hal/adxl345.c **** 	 */
+ 253:src/hal/adxl345.c **** 	ADXL_CS_HIGH;
+ 254:src/hal/adxl345.c **** }
+ 255:src/hal/adxl345.c **** 
+ 256:src/hal/adxl345.c **** void ADXL_Clr_Rcv_Buf()
+ 257:src/hal/adxl345.c **** {
+  32              		.loc 1 257 0
+  33              		.cfi_startproc
+  34              		@ args = 0, pretend = 0, frame = 0
+  35              		@ frame_needed = 0, uses_anonymous_args = 0
+  36 0000 10B5     		push	{r4, lr}
+  37              	.LCFI0:
+  38              		.cfi_def_cfa_offset 8
+  39              	.L2:
+ 258:src/hal/adxl345.c **** 	/*
+ 259:src/hal/adxl345.c **** 	 * Clears the receive buffer or we would get overrun errors
+ 260:src/hal/adxl345.c **** 	 */
+ 261:src/hal/adxl345.c **** 	while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_RXNE) == RESET);
+  40              		.loc 1 261 0 discriminator 1
+  41 0002 0548     		ldr	r0, .L3
+  42 0004 0121     		movs	r1, #1
+  43              		.cfi_offset 14, -4
+  44              		.cfi_offset 4, -8
+  45 0006 FFF7FEFF 		bl	SPI_I2S_GetFlagStatus
+  46 000a 0028     		cmp	r0, #0
+  47 000c F9D0     		beq	.L2
+ 262:src/hal/adxl345.c **** 	SPI_I2S_ReceiveData(SPI1);
+  48              		.loc 1 262 0
+  49 000e 0248     		ldr	r0, .L3
+ 263:src/hal/adxl345.c **** }
+  50              		.loc 1 263 0
+  51 0010 BDE81040 		pop	{r4, lr}
+ 262:src/hal/adxl345.c **** 	SPI_I2S_ReceiveData(SPI1);
+  52              		.loc 1 262 0
+  53 0014 FFF7FEBF 		b	SPI_I2S_ReceiveData
+  54              	.L4:
+  55              		.align	2
+  56              	.L3:
+  57 0018 00300140 		.word	1073819648
+  58              		.cfi_endproc
+  59              	.LFE33:
+  61              		.section	.text.ADXL_ReadSeq,"ax",%progbits
+  62              		.align	1
+  63              		.global	ADXL_ReadSeq
+  64              		.thumb
+  65              		.thumb_func
+  67              	ADXL_ReadSeq:
+  68              	.LFB32:
+ 217:src/hal/adxl345.c **** {
+  69              		.loc 1 217 0
+  70              		.cfi_startproc
+  71              		@ args = 0, pretend = 0, frame = 0
+  72              		@ frame_needed = 0, uses_anonymous_args = 0
+  73              	.LVL0:
+  74 0000 70B5     		push	{r4, r5, r6, lr}
+  75              	.LCFI1:
+  76              		.cfi_def_cfa_offset 16
+ 217:src/hal/adxl345.c **** {
+  77              		.loc 1 217 0
+  78 0002 0646     		mov	r6, r0
+  79              		.cfi_offset 14, -4
+  80              		.cfi_offset 6, -8
+  81              		.cfi_offset 5, -12
+  82              		.cfi_offset 4, -16
+  83 0004 0C46     		mov	r4, r1
+ 223:src/hal/adxl345.c **** 	ADXL_CS_LOW;
+  84              		.loc 1 223 0
+  85 0006 1A48     		ldr	r0, .L11
+  86              	.LVL1:
+  87 0008 1021     		movs	r1, #16
+  88              	.LVL2:
+ 217:src/hal/adxl345.c **** {
+  89              		.loc 1 217 0
+  90 000a 1546     		mov	r5, r2
+ 223:src/hal/adxl345.c **** 	ADXL_CS_LOW;
+  91              		.loc 1 223 0
+  92 000c 0022     		movs	r2, #0
+  93              	.LVL3:
+  94 000e FFF7FEFF 		bl	GPIO_WriteBit
+ 228:src/hal/adxl345.c **** 	SPI_I2S_SendData(SPI1, ADXL_R | ADXL_MB | reg);
+  95              		.loc 1 228 0
+  96 0012 1848     		ldr	r0, .L11+4
+  97 0014 46F0C001 		orr	r1, r6, #192
+  98 0018 FFF7FEFF 		bl	SPI_I2S_SendData
+ 232:src/hal/adxl345.c **** 	ADXL_Clr_Rcv_Buf();
+  99              		.loc 1 232 0
+ 100 001c FFF7FEFF 		bl	ADXL_Clr_Rcv_Buf
+ 101              	.L6:
+ 236:src/hal/adxl345.c **** 	while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
+ 102              		.loc 1 236 0 discriminator 1
+ 103 0020 1448     		ldr	r0, .L11+4
+ 104 0022 0221     		movs	r1, #2
+ 105 0024 FFF7FEFF 		bl	SPI_I2S_GetFlagStatus
+ 106 0028 0028     		cmp	r0, #0
+ 107 002a F9D0     		beq	.L6
+ 108 002c 0026     		movs	r6, #0
+ 109 002e 10E0     		b	.L7
+ 110              	.LVL4:
+ 111              	.L9:
+ 243:src/hal/adxl345.c **** 		SPI_I2S_SendData(SPI1, 0xFF);
+ 112              		.loc 1 243 0
+ 113 0030 1048     		ldr	r0, .L11+4
+ 114 0032 FF21     		movs	r1, #255
+ 115 0034 FFF7FEFF 		bl	SPI_I2S_SendData
+ 116              	.L8:
+ 244:src/hal/adxl345.c **** 		while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_RXNE) == RESET);
+ 117              		.loc 1 244 0 discriminator 1
+ 118 0038 0E48     		ldr	r0, .L11+4
+ 119 003a 0121     		movs	r1, #1
+ 120 003c FFF7FEFF 		bl	SPI_I2S_GetFlagStatus
+ 121 0040 0028     		cmp	r0, #0
+ 122 0042 F9D0     		beq	.L8
+ 245:src/hal/adxl345.c **** 		*data = SPI_I2S_ReceiveData(SPI1);
+ 123              		.loc 1 245 0
+ 124 0044 0B48     		ldr	r0, .L11+4
+ 125 0046 FFF7FEFF 		bl	SPI_I2S_ReceiveData
+ 247:src/hal/adxl345.c **** 		i++;
+ 126              		.loc 1 247 0
+ 127 004a 0136     		adds	r6, r6, #1
+ 128              	.LVL5:
+ 245:src/hal/adxl345.c **** 		*data = SPI_I2S_ReceiveData(SPI1);
+ 129              		.loc 1 245 0
+ 130 004c 04F8010B 		strb	r0, [r4], #1
+ 131              	.LVL6:
+ 247:src/hal/adxl345.c **** 		i++;
+ 132              		.loc 1 247 0
+ 133 0050 F6B2     		uxtb	r6, r6
+ 134              	.LVL7:
+ 135              	.L7:
+ 241:src/hal/adxl345.c **** 	while(i < count)
+ 136              		.loc 1 241 0 discriminator 1
+ 137 0052 AE42     		cmp	r6, r5
+ 138 0054 ECD3     		bcc	.L9
+ 139              	.L10:
+ 249:src/hal/adxl345.c **** 	while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY) == SET);
+ 140              		.loc 1 249 0 discriminator 1
+ 141 0056 8021     		movs	r1, #128
+ 142 0058 0648     		ldr	r0, .L11+4
+ 143 005a FFF7FEFF 		bl	SPI_I2S_GetFlagStatus
+ 144 005e 0128     		cmp	r0, #1
+ 145 0060 F9D0     		beq	.L10
+ 253:src/hal/adxl345.c **** 	ADXL_CS_HIGH;
+ 146              		.loc 1 253 0
+ 147 0062 0348     		ldr	r0, .L11
+ 148 0064 1021     		movs	r1, #16
+ 149 0066 0122     		movs	r2, #1
+ 254:src/hal/adxl345.c **** }
+ 150              		.loc 1 254 0
+ 151 0068 BDE87040 		pop	{r4, r5, r6, lr}
+ 253:src/hal/adxl345.c **** 	ADXL_CS_HIGH;
+ 152              		.loc 1 253 0
+ 153 006c FFF7FEBF 		b	GPIO_WriteBit
+ 154              	.L12:
+ 155              		.align	2
+ 156              	.L11:
+ 157 0070 00080140 		.word	1073809408
+ 158 0074 00300140 		.word	1073819648
+ 159              		.cfi_endproc
+ 160              	.LFE32:
+ 162              		.section	.text.ADXL_ReadByte,"ax",%progbits
+ 163              		.align	1
+ 164              		.global	ADXL_ReadByte
+ 165              		.thumb
+ 166              		.thumb_func
+ 168              	ADXL_ReadByte:
+ 169              	.LFB31:
+ 172:src/hal/adxl345.c **** {
+ 170              		.loc 1 172 0
+ 171              		.cfi_startproc
+ 172              		@ args = 0, pretend = 0, frame = 0
+ 173              		@ frame_needed = 0, uses_anonymous_args = 0
+ 174              	.LVL8:
+ 175 0000 10B5     		push	{r4, lr}
+ 176              	.LCFI2:
+ 177              		.cfi_def_cfa_offset 8
+ 178:src/hal/adxl345.c **** 	ADXL_CS_LOW;
+ 178              		.loc 1 178 0
+ 179 0002 1021     		movs	r1, #16
+ 172:src/hal/adxl345.c **** {
+ 180              		.loc 1 172 0
+ 181 0004 0446     		mov	r4, r0
+ 182              		.cfi_offset 14, -4
+ 183              		.cfi_offset 4, -8
+ 178:src/hal/adxl345.c **** 	ADXL_CS_LOW;
+ 184              		.loc 1 178 0
+ 185 0006 0022     		movs	r2, #0
+ 186 0008 1548     		ldr	r0, .L17
+ 187              	.LVL9:
+ 188 000a FFF7FEFF 		bl	GPIO_WriteBit
+ 182:src/hal/adxl345.c **** 	SPI_I2S_SendData(SPI1, ADXL_R | reg);
+ 189              		.loc 1 182 0
+ 190 000e 1548     		ldr	r0, .L17+4
+ 191 0010 44F08001 		orr	r1, r4, #128
+ 192 0014 FFF7FEFF 		bl	SPI_I2S_SendData
+ 186:src/hal/adxl345.c **** 	ADXL_Clr_Rcv_Buf();
+ 193              		.loc 1 186 0
+ 194 0018 FFF7FEFF 		bl	ADXL_Clr_Rcv_Buf
+ 195              	.L14:
+ 190:src/hal/adxl345.c **** 	while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
+ 196              		.loc 1 190 0 discriminator 1
+ 197 001c 1148     		ldr	r0, .L17+4
+ 198 001e 0221     		movs	r1, #2
+ 199 0020 FFF7FEFF 		bl	SPI_I2S_GetFlagStatus
+ 200 0024 0028     		cmp	r0, #0
+ 201 0026 F9D0     		beq	.L14
+ 194:src/hal/adxl345.c **** 	SPI_I2S_SendData(SPI1, 0xFF);
+ 202              		.loc 1 194 0
+ 203 0028 0E48     		ldr	r0, .L17+4
+ 204 002a FF21     		movs	r1, #255
+ 205 002c FFF7FEFF 		bl	SPI_I2S_SendData
+ 206              	.L15:
+ 198:src/hal/adxl345.c **** 	while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_RXNE) == RESET);
+ 207              		.loc 1 198 0 discriminator 1
+ 208 0030 0C48     		ldr	r0, .L17+4
+ 209 0032 0121     		movs	r1, #1
+ 210 0034 FFF7FEFF 		bl	SPI_I2S_GetFlagStatus
+ 211 0038 0028     		cmp	r0, #0
+ 212 003a F9D0     		beq	.L15
+ 202:src/hal/adxl345.c **** 	data = SPI_I2S_ReceiveData(SPI1);
+ 213              		.loc 1 202 0
+ 214 003c 0948     		ldr	r0, .L17+4
+ 215 003e FFF7FEFF 		bl	SPI_I2S_ReceiveData
+ 216 0042 C4B2     		uxtb	r4, r0
+ 217              	.LVL10:
+ 218              	.L16:
+ 206:src/hal/adxl345.c **** 	while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY) == SET);
+ 219              		.loc 1 206 0 discriminator 1
+ 220 0044 8021     		movs	r1, #128
+ 221 0046 0748     		ldr	r0, .L17+4
+ 222 0048 FFF7FEFF 		bl	SPI_I2S_GetFlagStatus
+ 223 004c 0128     		cmp	r0, #1
+ 224 004e F9D0     		beq	.L16
+ 210:src/hal/adxl345.c **** 	ADXL_CS_HIGH;
+ 225              		.loc 1 210 0
+ 226 0050 0348     		ldr	r0, .L17
+ 227 0052 1021     		movs	r1, #16
+ 228 0054 0122     		movs	r2, #1
+ 229 0056 FFF7FEFF 		bl	GPIO_WriteBit
+ 213:src/hal/adxl345.c **** }
+ 230              		.loc 1 213 0
+ 231 005a 2046     		mov	r0, r4
+ 232 005c 10BD     		pop	{r4, pc}
+ 233              	.L18:
+ 234 005e 00BF     		.align	2
+ 235              	.L17:
+ 236 0060 00080140 		.word	1073809408
+ 237 0064 00300140 		.word	1073819648
+ 238              		.cfi_endproc
+ 239              	.LFE31:
+ 241              		.section	.text.ADXL_Write,"ax",%progbits
+ 242              		.align	1
+ 243              		.global	ADXL_Write
+ 244              		.thumb
+ 245              		.thumb_func
+ 247              	ADXL_Write:
+ 248              	.LFB30:
+ 136:src/hal/adxl345.c **** {
+ 249              		.loc 1 136 0
+ 250              		.cfi_startproc
+ 251              		@ args = 0, pretend = 0, frame = 0
+ 252              		@ frame_needed = 0, uses_anonymous_args = 0
+ 253              	.LVL11:
+ 254 0000 70B5     		push	{r4, r5, r6, lr}
+ 255              	.LCFI3:
+ 256              		.cfi_def_cfa_offset 16
+ 140:src/hal/adxl345.c **** 	ADXL_CS_LOW;
+ 257              		.loc 1 140 0
+ 258 0002 0022     		movs	r2, #0
+ 136:src/hal/adxl345.c **** {
+ 259              		.loc 1 136 0
+ 260 0004 0546     		mov	r5, r0
+ 261              		.cfi_offset 14, -4
+ 262              		.cfi_offset 6, -8
+ 263              		.cfi_offset 5, -12
+ 264              		.cfi_offset 4, -16
+ 265 0006 0C46     		mov	r4, r1
+ 140:src/hal/adxl345.c **** 	ADXL_CS_LOW;
+ 266              		.loc 1 140 0
+ 267 0008 1148     		ldr	r0, .L22
+ 268              	.LVL12:
+ 269 000a 1021     		movs	r1, #16
+ 270              	.LVL13:
+ 271 000c FFF7FEFF 		bl	GPIO_WriteBit
+ 144:src/hal/adxl345.c **** 	SPI_I2S_SendData(SPI1, ADXL_W | reg);
+ 272              		.loc 1 144 0
+ 273 0010 1048     		ldr	r0, .L22+4
+ 274 0012 2946     		mov	r1, r5
+ 275 0014 FFF7FEFF 		bl	SPI_I2S_SendData
+ 148:src/hal/adxl345.c **** 	ADXL_Clr_Rcv_Buf();
+ 276              		.loc 1 148 0
+ 277 0018 FFF7FEFF 		bl	ADXL_Clr_Rcv_Buf
+ 278              	.L20:
+ 152:src/hal/adxl345.c **** 	while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
+ 279              		.loc 1 152 0 discriminator 1
+ 280 001c 0D48     		ldr	r0, .L22+4
+ 281 001e 0221     		movs	r1, #2
+ 282 0020 FFF7FEFF 		bl	SPI_I2S_GetFlagStatus
+ 283 0024 0028     		cmp	r0, #0
+ 284 0026 F9D0     		beq	.L20
+ 156:src/hal/adxl345.c **** 	SPI_I2S_SendData(SPI1, byte);
+ 285              		.loc 1 156 0
+ 286 0028 0A48     		ldr	r0, .L22+4
+ 287 002a 2146     		mov	r1, r4
+ 288 002c FFF7FEFF 		bl	SPI_I2S_SendData
+ 160:src/hal/adxl345.c **** 	ADXL_Clr_Rcv_Buf();
+ 289              		.loc 1 160 0
+ 290 0030 FFF7FEFF 		bl	ADXL_Clr_Rcv_Buf
+ 291              	.L21:
+ 164:src/hal/adxl345.c **** 	while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY) == SET);
+ 292              		.loc 1 164 0 discriminator 1
+ 293 0034 8021     		movs	r1, #128
+ 294 0036 0748     		ldr	r0, .L22+4
+ 295 0038 FFF7FEFF 		bl	SPI_I2S_GetFlagStatus
+ 296 003c 0128     		cmp	r0, #1
+ 297 003e F9D0     		beq	.L21
+ 168:src/hal/adxl345.c **** 	ADXL_CS_HIGH;
+ 298              		.loc 1 168 0
+ 299 0040 0348     		ldr	r0, .L22
+ 300 0042 1021     		movs	r1, #16
+ 301 0044 0122     		movs	r2, #1
+ 169:src/hal/adxl345.c **** }
+ 302              		.loc 1 169 0
+ 303 0046 BDE87040 		pop	{r4, r5, r6, lr}
+ 168:src/hal/adxl345.c **** 	ADXL_CS_HIGH;
+ 304              		.loc 1 168 0
+ 305 004a FFF7FEBF 		b	GPIO_WriteBit
+ 306              	.L23:
+ 307 004e 00BF     		.align	2
+ 308              	.L22:
+ 309 0050 00080140 		.word	1073809408
+ 310 0054 00300140 		.word	1073819648
+ 311              		.cfi_endproc
+ 312              	.LFE30:
+ 314              		.section	.text.ADXL_SPI_Setup,"ax",%progbits
+ 315              		.align	1
+ 316              		.global	ADXL_SPI_Setup
+ 317              		.thumb
+ 318              		.thumb_func
+ 320              	ADXL_SPI_Setup:
+ 321              	.LFB29:
+  50:src/hal/adxl345.c **** {
+ 322              		.loc 1 50 0
+ 323              		.cfi_startproc
+ 324              		@ args = 0, pretend = 0, frame = 24
+ 325              		@ frame_needed = 0, uses_anonymous_args = 0
+ 326 0000 30B5     		push	{r4, r5, lr}
+ 327              	.LCFI4:
+ 328              		.cfi_def_cfa_offset 12
+ 329 0002 87B0     		sub	sp, sp, #28
+ 330              	.LCFI5:
+ 331              		.cfi_def_cfa_offset 40
+  62:src/hal/adxl345.c **** 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
+ 332              		.loc 1 62 0
+ 333 0004 1023     		movs	r3, #16
+  63:src/hal/adxl345.c **** 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+ 334              		.loc 1 63 0
+ 335 0006 0324     		movs	r4, #3
+ 336              		.cfi_offset 14, -4
+ 337              		.cfi_offset 5, -8
+ 338              		.cfi_offset 4, -12
+  65:src/hal/adxl345.c ****   	GPIO_Init(GPIOA, &GPIO_InitStructure);
+ 339              		.loc 1 65 0
+ 340 0008 3848     		ldr	r0, .L27
+ 341 000a 05A9     		add	r1, sp, #20
+  62:src/hal/adxl345.c **** 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
+ 342              		.loc 1 62 0
+ 343 000c ADF81430 		strh	r3, [sp, #20]	@ movhi
+  64:src/hal/adxl345.c ****   	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+ 344              		.loc 1 64 0
+ 345 0010 8DF81730 		strb	r3, [sp, #23]
+  63:src/hal/adxl345.c **** 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+ 346              		.loc 1 63 0
+ 347 0014 8DF81640 		strb	r4, [sp, #22]
+  65:src/hal/adxl345.c ****   	GPIO_Init(GPIOA, &GPIO_InitStructure);
+ 348              		.loc 1 65 0
+ 349 0018 FFF7FEFF 		bl	GPIO_Init
+  70:src/hal/adxl345.c **** 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6 ;
+ 350              		.loc 1 70 0
+ 351 001c 4023     		movs	r3, #64
+ 352 001e ADF81430 		strh	r3, [sp, #20]	@ movhi
+  73:src/hal/adxl345.c ****   	GPIO_Init(GPIOA, &GPIO_InitStructure);
+ 353              		.loc 1 73 0
+ 354 0022 3248     		ldr	r0, .L27
+  72:src/hal/adxl345.c ****   	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+ 355              		.loc 1 72 0
+ 356 0024 0423     		movs	r3, #4
+  73:src/hal/adxl345.c ****   	GPIO_Init(GPIOA, &GPIO_InitStructure);
+ 357              		.loc 1 73 0
+ 358 0026 05A9     		add	r1, sp, #20
+  80:src/hal/adxl345.c ****   	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+ 359              		.loc 1 80 0
+ 360 0028 1825     		movs	r5, #24
+  72:src/hal/adxl345.c ****   	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+ 361              		.loc 1 72 0
+ 362 002a 8DF81730 		strb	r3, [sp, #23]
+  71:src/hal/adxl345.c **** 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+ 363              		.loc 1 71 0
+ 364 002e 8DF81640 		strb	r4, [sp, #22]
+  73:src/hal/adxl345.c ****   	GPIO_Init(GPIOA, &GPIO_InitStructure);
+ 365              		.loc 1 73 0
+ 366 0032 FFF7FEFF 		bl	GPIO_Init
+  78:src/hal/adxl345.c **** 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_7;
+ 367              		.loc 1 78 0
+ 368 0036 A023     		movs	r3, #160
+  81:src/hal/adxl345.c ****   	GPIO_Init(GPIOA, &GPIO_InitStructure);
+ 369              		.loc 1 81 0
+ 370 0038 2C48     		ldr	r0, .L27
+ 371 003a 05A9     		add	r1, sp, #20
+  78:src/hal/adxl345.c **** 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_7;
+ 372              		.loc 1 78 0
+ 373 003c ADF81430 		strh	r3, [sp, #20]	@ movhi
+  79:src/hal/adxl345.c **** 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+ 374              		.loc 1 79 0
+ 375 0040 8DF81640 		strb	r4, [sp, #22]
+  80:src/hal/adxl345.c ****   	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+ 376              		.loc 1 80 0
+ 377 0044 8DF81750 		strb	r5, [sp, #23]
+  81:src/hal/adxl345.c ****   	GPIO_Init(GPIOA, &GPIO_InitStructure);
+ 378              		.loc 1 81 0
+ 379 0048 FFF7FEFF 		bl	GPIO_Init
+  86:src/hal/adxl345.c **** 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_14 | GPIO_Pin_15 ;
+ 380              		.loc 1 86 0
+ 381 004c 4CF20003 		movw	r3, 49152	@ movhi
+ 382 0050 ADF81430 		strh	r3, [sp, #20]	@ movhi
+  89:src/hal/adxl345.c ****   	GPIO_Init(GPIOC, &GPIO_InitStructure);
+ 383              		.loc 1 89 0
+ 384 0054 2648     		ldr	r0, .L27+4
+  88:src/hal/adxl345.c ****   	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+ 385              		.loc 1 88 0
+ 386 0056 4823     		movs	r3, #72
+  89:src/hal/adxl345.c ****   	GPIO_Init(GPIOC, &GPIO_InitStructure);
+ 387              		.loc 1 89 0
+ 388 0058 05A9     		add	r1, sp, #20
+  88:src/hal/adxl345.c ****   	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+ 389              		.loc 1 88 0
+ 390 005a 8DF81730 		strb	r3, [sp, #23]
+  87:src/hal/adxl345.c **** 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+ 391              		.loc 1 87 0
+ 392 005e 8DF81640 		strb	r4, [sp, #22]
+  89:src/hal/adxl345.c ****   	GPIO_Init(GPIOC, &GPIO_InitStructure);
+ 393              		.loc 1 89 0
+ 394 0062 FFF7FEFF 		bl	GPIO_Init
+  94:src/hal/adxl345.c **** 	SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
+ 395              		.loc 1 94 0
+ 396 0066 0023     		movs	r3, #0
+ 397 0068 ADF80030 		strh	r3, [sp, #0]	@ movhi
+  95:src/hal/adxl345.c ****   	SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
+ 398              		.loc 1 95 0
+ 399 006c 4FF48273 		mov	r3, #260	@ movhi
+ 400 0070 ADF80230 		strh	r3, [sp, #2]	@ movhi
+  96:src/hal/adxl345.c ****   	SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;
+ 401              		.loc 1 96 0
+ 402 0074 0023     		movs	r3, #0
+ 403 0076 ADF80430 		strh	r3, [sp, #4]	@ movhi
+  97:src/hal/adxl345.c ****   	SPI_InitStructure.SPI_CPOL = SPI_CPOL_High;
+ 404              		.loc 1 97 0
+ 405 007a 0223     		movs	r3, #2
+ 406 007c ADF80630 		strh	r3, [sp, #6]	@ movhi
+  98:src/hal/adxl345.c ****   	SPI_InitStructure.SPI_CPHA = SPI_CPHA_2Edge;
+ 407              		.loc 1 98 0
+ 408 0080 0123     		movs	r3, #1
+ 409 0082 ADF80830 		strh	r3, [sp, #8]	@ movhi
+  99:src/hal/adxl345.c **** 	SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;
+ 410              		.loc 1 99 0
+ 411 0086 4FF40073 		mov	r3, #512	@ movhi
+ 412 008a ADF80A30 		strh	r3, [sp, #10]	@ movhi
+ 101:src/hal/adxl345.c **** 	SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
+ 413              		.loc 1 101 0
+ 414 008e 0023     		movs	r3, #0
+ 415 0090 ADF80E30 		strh	r3, [sp, #14]	@ movhi
+ 103:src/hal/adxl345.c ****   	SPI_Init(SPI1, &SPI_InitStructure);
+ 416              		.loc 1 103 0
+ 417 0094 1748     		ldr	r0, .L27+8
+ 102:src/hal/adxl345.c ****   	SPI_InitStructure.SPI_CRCPolynomial = 7;
+ 418              		.loc 1 102 0
+ 419 0096 0723     		movs	r3, #7
+ 103:src/hal/adxl345.c ****   	SPI_Init(SPI1, &SPI_InitStructure);
+ 420              		.loc 1 103 0
+ 421 0098 6946     		mov	r1, sp
+ 102:src/hal/adxl345.c ****   	SPI_InitStructure.SPI_CRCPolynomial = 7;
+ 422              		.loc 1 102 0
+ 423 009a ADF81030 		strh	r3, [sp, #16]	@ movhi
+ 100:src/hal/adxl345.c **** 	SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_16;
+ 424              		.loc 1 100 0
+ 425 009e ADF80C50 		strh	r5, [sp, #12]	@ movhi
+ 103:src/hal/adxl345.c ****   	SPI_Init(SPI1, &SPI_InitStructure);
+ 426              		.loc 1 103 0
+ 427 00a2 FFF7FEFF 		bl	SPI_Init
+ 108:src/hal/adxl345.c ****    	SPI_Cmd(SPI1,ENABLE);
+ 428              		.loc 1 108 0
+ 429 00a6 0121     		movs	r1, #1
+ 430 00a8 1248     		ldr	r0, .L27+8
+ 431 00aa FFF7FEFF 		bl	SPI_Cmd
+ 114:src/hal/adxl345.c ****    	if( ADXL_ReadByte(DEVID) != 0xE5) return ERROR;
+ 432              		.loc 1 114 0
+ 433 00ae 0020     		movs	r0, #0
+ 434 00b0 FFF7FEFF 		bl	ADXL_ReadByte
+ 435 00b4 E528     		cmp	r0, #229
+ 436 00b6 15D1     		bne	.L26
+ 119:src/hal/adxl345.c **** 	ADXL_Write(POWER_CTL,0x08);
+ 437              		.loc 1 119 0
+ 438 00b8 B838     		subs	r0, r0, #184
+ 439 00ba 0821     		movs	r1, #8
+ 440 00bc FFF7FEFF 		bl	ADXL_Write
+ 120:src/hal/adxl345.c **** 	ADXL_Write(DATA_FORMAT,0x0B);
+ 441              		.loc 1 120 0
+ 442 00c0 3120     		movs	r0, #49
+ 443 00c2 0B21     		movs	r1, #11
+ 444 00c4 FFF7FEFF 		bl	ADXL_Write
+ 125:src/hal/adxl345.c **** 	ADXL_Write(OFSX,X_OFF);
+ 445              		.loc 1 125 0
+ 446 00c8 1E20     		movs	r0, #30
+ 447 00ca FF21     		movs	r1, #255
+ 448 00cc FFF7FEFF 		bl	ADXL_Write
+ 126:src/hal/adxl345.c **** 	ADXL_Write(OFSY,Y_OFF);
+ 449              		.loc 1 126 0
+ 450 00d0 1F20     		movs	r0, #31
+ 451 00d2 FA21     		movs	r1, #250
+ 452 00d4 FFF7FEFF 		bl	ADXL_Write
+ 127:src/hal/adxl345.c **** 	ADXL_Write(OFSZ,Z_OFF);
+ 453              		.loc 1 127 0
+ 454 00d8 2020     		movs	r0, #32
+ 455 00da 0621     		movs	r1, #6
+ 456 00dc FFF7FEFF 		bl	ADXL_Write
+ 132:src/hal/adxl345.c **** 	return SUCCESS;
+ 457              		.loc 1 132 0
+ 458 00e0 0120     		movs	r0, #1
+ 459 00e2 00E0     		b	.L25
+ 460              	.L26:
+ 114:src/hal/adxl345.c ****    	if( ADXL_ReadByte(DEVID) != 0xE5) return ERROR;
+ 461              		.loc 1 114 0
+ 462 00e4 0020     		movs	r0, #0
+ 463              	.L25:
+ 133:src/hal/adxl345.c **** }
+ 464              		.loc 1 133 0
+ 465 00e6 07B0     		add	sp, sp, #28
+ 466 00e8 30BD     		pop	{r4, r5, pc}
+ 467              	.L28:
+ 468 00ea 00BF     		.align	2
+ 469              	.L27:
+ 470 00ec 00080140 		.word	1073809408
+ 471 00f0 00100140 		.word	1073811456
+ 472 00f4 00300140 		.word	1073819648
+ 473              		.cfi_endproc
+ 474              	.LFE29:
+ 476              		.section	.text.ADXL_GetACC,"ax",%progbits
+ 477              		.align	1
+ 478              		.global	ADXL_GetACC
+ 479              		.thumb
+ 480              		.thumb_func
+ 482              	ADXL_GetACC:
+ 483              	.LFB34:
+ 264:src/hal/adxl345.c **** 
+ 265:src/hal/adxl345.c **** void ADXL_GetACC(int16_vect3* acc)
+ 266:src/hal/adxl345.c **** {
+ 484              		.loc 1 266 0
+ 485              		.cfi_startproc
+ 486              		@ args = 0, pretend = 0, frame = 8
+ 487              		@ frame_needed = 0, uses_anonymous_args = 0
+ 488              	.LVL14:
+ 489 0000 13B5     		push	{r0, r1, r4, lr}
+ 490              	.LCFI6:
+ 491              		.cfi_def_cfa_offset 16
+ 267:src/hal/adxl345.c **** 
+ 268:src/hal/adxl345.c **** 	uint8_t raw_data[6];
+ 269:src/hal/adxl345.c **** 
+ 270:src/hal/adxl345.c **** 	/*
+ 271:src/hal/adxl345.c **** 	 * get 6 bytes! X,Y,Z
+ 272:src/hal/adxl345.c **** 	 */
+ 273:src/hal/adxl345.c **** 	ADXL_ReadSeq(DATAX0,raw_data,6);
+ 492              		.loc 1 273 0
+ 493 0002 0622     		movs	r2, #6
+ 266:src/hal/adxl345.c **** {
+ 494              		.loc 1 266 0
+ 495 0004 0446     		mov	r4, r0
+ 496              		.cfi_offset 14, -4
+ 497              		.cfi_offset 4, -8
+ 498              		.cfi_offset 1, -12
+ 499              		.cfi_offset 0, -16
+ 500              		.loc 1 273 0
+ 501 0006 6946     		mov	r1, sp
+ 502 0008 3220     		movs	r0, #50
+ 503              	.LVL15:
+ 504 000a FFF7FEFF 		bl	ADXL_ReadSeq
+ 274:src/hal/adxl345.c **** 
+ 275:src/hal/adxl345.c **** 	/*
+ 276:src/hal/adxl345.c **** 	 * add LOW-Byte to HIGH-Byte
+ 277:src/hal/adxl345.c **** 	 */
+ 278:src/hal/adxl345.c **** 	acc->x = (raw_data[1]<<8) | (raw_data[0]);
+ 505              		.loc 1 278 0
+ 506 000e 9DF80120 		ldrb	r2, [sp, #1]	@ zero_extendqisi2
+ 507 0012 9DF80030 		ldrb	r3, [sp, #0]	@ zero_extendqisi2
+ 508 0016 43EA0223 		orr	r3, r3, r2, lsl #8
+ 509 001a 2380     		strh	r3, [r4, #0]	@ movhi
+ 279:src/hal/adxl345.c **** 	acc->y = (raw_data[3]<<8) | (raw_data[2]);
+ 510              		.loc 1 279 0
+ 511 001c 9DF80320 		ldrb	r2, [sp, #3]	@ zero_extendqisi2
+ 512 0020 9DF80230 		ldrb	r3, [sp, #2]	@ zero_extendqisi2
+ 513 0024 43EA0223 		orr	r3, r3, r2, lsl #8
+ 514 0028 6380     		strh	r3, [r4, #2]	@ movhi
+ 280:src/hal/adxl345.c **** 	acc->z = (raw_data[5]<<8) | (raw_data[4]);
+ 515              		.loc 1 280 0
+ 516 002a 9DF80520 		ldrb	r2, [sp, #5]	@ zero_extendqisi2
+ 517 002e 9DF80430 		ldrb	r3, [sp, #4]	@ zero_extendqisi2
+ 518 0032 43EA0223 		orr	r3, r3, r2, lsl #8
+ 519 0036 A380     		strh	r3, [r4, #4]	@ movhi
+ 281:src/hal/adxl345.c **** 
+ 282:src/hal/adxl345.c **** }
+ 520              		.loc 1 282 0
+ 521 0038 1CBD     		pop	{r2, r3, r4, pc}
+ 522              		.cfi_endproc
+ 523              	.LFE34:
+ 525              		.global	__aeabi_i2d
+ 526              		.global	__aeabi_dmul
+ 527              		.global	__aeabi_d2f
+ 528              		.section	.text.ADXL_Convert_to_G,"ax",%progbits
+ 529              		.align	1
+ 530              		.global	ADXL_Convert_to_G
+ 531              		.thumb
+ 532              		.thumb_func
+ 534              	ADXL_Convert_to_G:
+ 535              	.LFB35:
+ 283:src/hal/adxl345.c **** 
+ 284:src/hal/adxl345.c **** void ADXL_Convert_to_G(int16_vect3* acc, float_vect3* acc_g)
+ 285:src/hal/adxl345.c **** {
+ 536              		.loc 1 285 0
+ 537              		.cfi_startproc
+ 538              		@ args = 0, pretend = 0, frame = 0
+ 539              		@ frame_needed = 0, uses_anonymous_args = 0
+ 540              	.LVL16:
+ 541 0000 38B5     		push	{r3, r4, r5, lr}
+ 542              	.LCFI7:
+ 543              		.cfi_def_cfa_offset 16
+ 544              		.loc 1 285 0
+ 545 0002 0546     		mov	r5, r0
+ 546              		.cfi_offset 14, -4
+ 547              		.cfi_offset 5, -8
+ 548              		.cfi_offset 4, -12
+ 549              		.cfi_offset 3, -16
+ 286:src/hal/adxl345.c **** 	/*
+ 287:src/hal/adxl345.c **** 	 * convert raw values to real units
+ 288:src/hal/adxl345.c **** 	 * 0.0039 is taken from the datasheet
+ 289:src/hal/adxl345.c **** 	 */
+ 290:src/hal/adxl345.c **** 	acc_g->x = acc->x * 0.0039;
+ 550              		.loc 1 290 0
+ 551 0004 B0F90000 		ldrsh	r0, [r0, #0]
+ 552              	.LVL17:
+ 285:src/hal/adxl345.c **** {
+ 553              		.loc 1 285 0
+ 554 0008 0C46     		mov	r4, r1
+ 555              		.loc 1 290 0
+ 556 000a FFF7FEFF 		bl	__aeabi_i2d
+ 557              	.LVL18:
+ 558 000e 10A3     		adr	r3, .L31
+ 559 0010 D3E90023 		ldrd	r2, [r3]
+ 560 0014 FFF7FEFF 		bl	__aeabi_dmul
+ 561 0018 FFF7FEFF 		bl	__aeabi_d2f
+ 562 001c 2060     		str	r0, [r4, #0]	@ float
+ 291:src/hal/adxl345.c **** 	acc_g->y = acc->y * 0.0039;
+ 563              		.loc 1 291 0
+ 564 001e B5F90200 		ldrsh	r0, [r5, #2]
+ 565 0022 FFF7FEFF 		bl	__aeabi_i2d
+ 566 0026 0AA3     		adr	r3, .L31
+ 567 0028 D3E90023 		ldrd	r2, [r3]
+ 568 002c FFF7FEFF 		bl	__aeabi_dmul
+ 569 0030 FFF7FEFF 		bl	__aeabi_d2f
+ 570 0034 6060     		str	r0, [r4, #4]	@ float
+ 292:src/hal/adxl345.c **** 	acc_g->z = acc->z * 0.0039;
+ 571              		.loc 1 292 0
+ 572 0036 B5F90400 		ldrsh	r0, [r5, #4]
+ 573 003a FFF7FEFF 		bl	__aeabi_i2d
+ 574 003e 04A3     		adr	r3, .L31
+ 575 0040 D3E90023 		ldrd	r2, [r3]
+ 576 0044 FFF7FEFF 		bl	__aeabi_dmul
+ 577 0048 FFF7FEFF 		bl	__aeabi_d2f
+ 578 004c A060     		str	r0, [r4, #8]	@ float
+ 293:src/hal/adxl345.c **** 
+ 294:src/hal/adxl345.c **** }
+ 579              		.loc 1 294 0
+ 580 004e 38BD     		pop	{r3, r4, r5, pc}
+ 581              	.L32:
+ 582              		.align	3
+ 583              	.L31:
+ 584 0050 DE718A8E 		.word	-1903529506
+ 585 0054 E4F26F3F 		.word	1064301284
+ 586              		.cfi_endproc
+ 587              	.LFE35:
+ 589              		.global	__aeabi_f2d
+ 590              		.global	__aeabi_fmul
+ 591              		.global	__aeabi_fadd
+ 592              		.global	__aeabi_ddiv
+ 593              		.section	.text.ADXL_CalAngle,"ax",%progbits
+ 594              		.align	1
+ 595              		.global	ADXL_CalAngle
+ 596              		.thumb
+ 597              		.thumb_func
+ 599              	ADXL_CalAngle:
+ 600              	.LFB36:
+ 295:src/hal/adxl345.c **** void ADXL_CalAngle(float* acc_g, float* angel)
+ 296:src/hal/adxl345.c **** {
+ 601              		.loc 1 296 0
+ 602              		.cfi_startproc
+ 603              		@ args = 0, pretend = 0, frame = 0
+ 604              		@ frame_needed = 0, uses_anonymous_args = 0
+ 605              	.LVL19:
+ 606 0000 2DE9F843 		push	{r3, r4, r5, r6, r7, r8, r9, lr}
+ 607              	.LCFI8:
+ 608              		.cfi_def_cfa_offset 32
+ 609              		.loc 1 296 0
+ 610 0004 0646     		mov	r6, r0
+ 611              		.cfi_offset 14, -4
+ 612              		.cfi_offset 9, -8
+ 613              		.cfi_offset 8, -12
+ 614              		.cfi_offset 7, -16
+ 615              		.cfi_offset 6, -20
+ 616              		.cfi_offset 5, -24
+ 617              		.cfi_offset 4, -28
+ 618              		.cfi_offset 3, -32
+ 297:src/hal/adxl345.c **** 	angel[0] = atan(  acc_g[0] / sqrt(acc_g[1]*acc_g[1]+acc_g[2]*acc_g[2])) * 57.2958;
+ 619              		.loc 1 297 0
+ 620 0006 0068     		ldr	r0, [r0, #0]	@ float
+ 621              	.LVL20:
+ 296:src/hal/adxl345.c **** {
+ 622              		.loc 1 296 0
+ 623 0008 0F46     		mov	r7, r1
+ 624              		.loc 1 297 0
+ 625 000a FFF7FEFF 		bl	__aeabi_f2d
+ 626              	.LVL21:
+ 627 000e 0446     		mov	r4, r0
+ 628 0010 7068     		ldr	r0, [r6, #4]	@ float
+ 629 0012 0D46     		mov	r5, r1
+ 630 0014 0146     		mov	r1, r0
+ 631 0016 FFF7FEFF 		bl	__aeabi_fmul
+ 632 001a D6F80890 		ldr	r9, [r6, #8]	@ float
+ 633 001e 8046     		mov	r8, r0
+ 634 0020 4946     		mov	r1, r9
+ 635 0022 4846     		mov	r0, r9
+ 636 0024 FFF7FEFF 		bl	__aeabi_fmul
+ 637 0028 0146     		mov	r1, r0
+ 638 002a 4046     		mov	r0, r8
+ 639 002c FFF7FEFF 		bl	__aeabi_fadd
+ 640 0030 FFF7FEFF 		bl	__aeabi_f2d
+ 641 0034 FFF7FEFF 		bl	sqrt
+ 642 0038 0246     		mov	r2, r0
+ 643 003a 0B46     		mov	r3, r1
+ 644 003c 2046     		mov	r0, r4
+ 645 003e 2946     		mov	r1, r5
+ 646 0040 FFF7FEFF 		bl	__aeabi_ddiv
+ 647 0044 FFF7FEFF 		bl	atan
+ 648 0048 2DA3     		adr	r3, .L34
+ 649 004a D3E90023 		ldrd	r2, [r3]
+ 650 004e FFF7FEFF 		bl	__aeabi_dmul
+ 651 0052 FFF7FEFF 		bl	__aeabi_d2f
+ 652 0056 3860     		str	r0, [r7, #0]	@ float
+ 298:src/hal/adxl345.c **** 	angel[1] = atan(  acc_g[1] / sqrt(acc_g[0]*acc_g[0]+acc_g[2]*acc_g[2])) * 57.2958;
+ 653              		.loc 1 298 0
+ 654 0058 7068     		ldr	r0, [r6, #4]	@ float
+ 655 005a FFF7FEFF 		bl	__aeabi_f2d
+ 656 005e 0446     		mov	r4, r0
+ 657 0060 3068     		ldr	r0, [r6, #0]	@ float
+ 658 0062 0D46     		mov	r5, r1
+ 659 0064 0146     		mov	r1, r0
+ 660 0066 FFF7FEFF 		bl	__aeabi_fmul
+ 661 006a D6F80890 		ldr	r9, [r6, #8]	@ float
+ 662 006e 8046     		mov	r8, r0
+ 663 0070 4946     		mov	r1, r9
+ 664 0072 4846     		mov	r0, r9
+ 665 0074 FFF7FEFF 		bl	__aeabi_fmul
+ 666 0078 0146     		mov	r1, r0
+ 667 007a 4046     		mov	r0, r8
+ 668 007c FFF7FEFF 		bl	__aeabi_fadd
+ 669 0080 FFF7FEFF 		bl	__aeabi_f2d
+ 670 0084 FFF7FEFF 		bl	sqrt
+ 671 0088 0246     		mov	r2, r0
+ 672 008a 0B46     		mov	r3, r1
+ 673 008c 2046     		mov	r0, r4
+ 674 008e 2946     		mov	r1, r5
+ 675 0090 FFF7FEFF 		bl	__aeabi_ddiv
+ 676 0094 FFF7FEFF 		bl	atan
+ 677 0098 19A3     		adr	r3, .L34
+ 678 009a D3E90023 		ldrd	r2, [r3]
+ 679 009e FFF7FEFF 		bl	__aeabi_dmul
+ 680 00a2 FFF7FEFF 		bl	__aeabi_d2f
+ 681 00a6 7860     		str	r0, [r7, #4]	@ float
+ 299:src/hal/adxl345.c **** 	angel[2] = atan(  sqrt(acc_g[0]*acc_g[0] + acc_g[1]*acc_g[1]) / acc_g[3]) * 57.2958;
+ 682              		.loc 1 299 0
+ 683 00a8 3068     		ldr	r0, [r6, #0]	@ float
+ 684 00aa 7568     		ldr	r5, [r6, #4]	@ float
+ 685 00ac 0146     		mov	r1, r0
+ 686 00ae FFF7FEFF 		bl	__aeabi_fmul
+ 687 00b2 2946     		mov	r1, r5
+ 688 00b4 0446     		mov	r4, r0
+ 689 00b6 2846     		mov	r0, r5
+ 690 00b8 FFF7FEFF 		bl	__aeabi_fmul
+ 691 00bc 0146     		mov	r1, r0
+ 692 00be 2046     		mov	r0, r4
+ 693 00c0 FFF7FEFF 		bl	__aeabi_fadd
+ 694 00c4 FFF7FEFF 		bl	__aeabi_f2d
+ 695 00c8 FFF7FEFF 		bl	sqrt
+ 696 00cc 0446     		mov	r4, r0
+ 697 00ce F068     		ldr	r0, [r6, #12]	@ float
+ 698 00d0 0D46     		mov	r5, r1
+ 699 00d2 FFF7FEFF 		bl	__aeabi_f2d
+ 700 00d6 0246     		mov	r2, r0
+ 701 00d8 0B46     		mov	r3, r1
+ 702 00da 2046     		mov	r0, r4
+ 703 00dc 2946     		mov	r1, r5
+ 704 00de FFF7FEFF 		bl	__aeabi_ddiv
+ 705 00e2 FFF7FEFF 		bl	atan
+ 706 00e6 06A3     		adr	r3, .L34
+ 707 00e8 D3E90023 		ldrd	r2, [r3]
+ 708 00ec FFF7FEFF 		bl	__aeabi_dmul
+ 709 00f0 FFF7FEFF 		bl	__aeabi_d2f
+ 710 00f4 B860     		str	r0, [r7, #8]	@ float
+ 300:src/hal/adxl345.c **** }
+ 711              		.loc 1 300 0
+ 712 00f6 BDE8F883 		pop	{r3, r4, r5, r6, r7, r8, r9, pc}
+ 713              	.L35:
+ 714 00fa 00BFAFF3 		.align	3
+ 714      0080
+ 715              	.L34:
+ 716 0100 12143FC6 		.word	-968944622
+ 717 0104 DCA54C40 		.word	1078765020
+ 718              		.cfi_endproc
+ 719              	.LFE36:
+ 721              		.text
+ 722              	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 adxl345.c
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:24     .text.ADXL_Clr_Rcv_Buf:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:29     .text.ADXL_Clr_Rcv_Buf:00000000 ADXL_Clr_Rcv_Buf
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:57     .text.ADXL_Clr_Rcv_Buf:00000018 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:62     .text.ADXL_ReadSeq:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:67     .text.ADXL_ReadSeq:00000000 ADXL_ReadSeq
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:157    .text.ADXL_ReadSeq:00000070 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:163    .text.ADXL_ReadByte:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:168    .text.ADXL_ReadByte:00000000 ADXL_ReadByte
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:236    .text.ADXL_ReadByte:00000060 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:242    .text.ADXL_Write:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:247    .text.ADXL_Write:00000000 ADXL_Write
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:309    .text.ADXL_Write:00000050 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:315    .text.ADXL_SPI_Setup:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:320    .text.ADXL_SPI_Setup:00000000 ADXL_SPI_Setup
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:470    .text.ADXL_SPI_Setup:000000ec $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:477    .text.ADXL_GetACC:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:482    .text.ADXL_GetACC:00000000 ADXL_GetACC
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:529    .text.ADXL_Convert_to_G:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:534    .text.ADXL_Convert_to_G:00000000 ADXL_Convert_to_G
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:584    .text.ADXL_Convert_to_G:00000050 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:594    .text.ADXL_CalAngle:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:599    .text.ADXL_CalAngle:00000000 ADXL_CalAngle
+C:\Users\MICHAE~1\AppData\Local\Temp\ccZ86Mzn.s:716    .text.ADXL_CalAngle:00000100 $d
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+SPI_I2S_GetFlagStatus
+SPI_I2S_ReceiveData
+GPIO_WriteBit
+SPI_I2S_SendData
+GPIO_Init
+SPI_Init
+SPI_Cmd
+__aeabi_i2d
+__aeabi_dmul
+__aeabi_d2f
+__aeabi_f2d
+__aeabi_fmul
+__aeabi_fadd
+__aeabi_ddiv
+sqrt
+atan

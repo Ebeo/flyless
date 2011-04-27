@@ -34,8 +34,6 @@
 #include "queue.h"
 #include "semphr.h"
 
-#include "global_data.h"
-#include "mavlink_types.h"
 
 #include "led.h"
 #include "uart.h"
@@ -43,15 +41,17 @@
 #include "itg3200.h"
 #include "servo.h"
 
-
 #include "protocol_task.h"
 #include "kalman_task.h"
 #include "led_task.h"
+#include "control_task.h"
 
+#include "global_data.h"
 
-#define tskKALMAN_PRIORITY 3
-#define tskPROTOCOL_PRIORITY 1
-#define tskLED_PRIORITY	1
+#define tskKALMAN_PRIORITY		3
+#define tskCONTROL_PRIORITY   	3
+#define tskPROTOCOL_PRIORITY	1
+#define tskLED_PRIORITY			1
 
 
 
@@ -82,7 +82,6 @@ int main(void)
 
 	/* reset global data values */
 	global_data_reset();
-	global_data_reset_param_defaults();
 
 
 	/* UART Init */
@@ -101,7 +100,7 @@ int main(void)
 	/* ITG 3200 Init */
 	/* no Fail-Check implemented */
 	ITG_I2C_Setup();
-	ITG_RefOffset(&global_data.param[PARAM_GYRO_OFF_X]);
+	//ITG_RefOffset(&global_data.param[PARAM_GYRO_OFF_X]);
 
 	UART_Puts((uint8_t* )"ITG 3200: OK\r\n");
 
@@ -112,9 +111,11 @@ int main(void)
 	/* Create Tasks and start the scheduler */
 	UART_Puts((uint8_t* )"Now starting the scheduler!\r\n");
 
-	xTaskCreate( KALMAN_Task, 	( signed char * ) "KALMAN"	, configMINIMAL_STACK_SIZE * 2	 	,( void * ) NULL, tskKALMAN_PRIORITY 	, NULL );
-	xTaskCreate( PROTOCOL_Task, ( signed char * ) "PROT"	, configMINIMAL_STACK_SIZE * 2		,( void * ) NULL, tskPROTOCOL_PRIORITY 	, NULL );
-	xTaskCreate( LED_Task, 	  	( signed char * ) "LED"   	, configMINIMAL_STACK_SIZE 			,( void * ) NULL, tskLED_PRIORITY    	, NULL );
+	xTaskCreate( KALMAN_Task, 	( signed char * ) "KALMAN"	, configMINIMAL_STACK_SIZE * 2	,( void * ) NULL, tskKALMAN_PRIORITY 	, NULL );
+	xTaskCreate( PROTOCOL_Task, ( signed char * ) "PROT"	, configMINIMAL_STACK_SIZE * 2	,( void * ) NULL, tskPROTOCOL_PRIORITY 	, NULL );
+	xTaskCreate( LED_Task, 	  	( signed char * ) "LED"   	, configMINIMAL_STACK_SIZE 		,( void * ) NULL, tskLED_PRIORITY    	, NULL );
+	xTaskCreate( CONTROL_Task, 	( signed char * ) "CTRL"   	, configMINIMAL_STACK_SIZE 		,( void * ) NULL, tskCONTROL_PRIORITY   , NULL );
+
 	vTaskStartScheduler();
 
 	UART_Puts((uint8_t* )"\r\nFailed! U have a problem!");

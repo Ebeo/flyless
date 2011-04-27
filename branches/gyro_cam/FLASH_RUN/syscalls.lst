@@ -1,0 +1,450 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 18, 4
+  12              		.thumb
+  13              		.file	"syscalls.c"
+  21              	.Ltext0:
+  22              		.cfi_sections	.debug_frame
+  23              		.section	.text._kill,"ax",%progbits
+  24              		.align	1
+  25              		.global	_kill
+  26              		.thumb
+  27              		.thumb_func
+  29              	_kill:
+  30              	.LFB29:
+  31              		.file 1 "src/syscalls.c"
+   1:src/syscalls.c **** /*
+   2:src/syscalls.c ****  * syscalls.c
+   3:src/syscalls.c ****  *
+   4:src/syscalls.c ****  *  Created on: 03.12.2009
+   5:src/syscalls.c ****  *      Author: Martin Thomas, 3BSD license
+   6:src/syscalls.c ****  */
+   7:src/syscalls.c **** 
+   8:src/syscalls.c **** #define SBRK_VERBOSE 1
+   9:src/syscalls.c **** 
+  10:src/syscalls.c **** #include <reent.h>
+  11:src/syscalls.c **** #include <errno.h>
+  12:src/syscalls.c **** #include <stdlib.h> /* abort */
+  13:src/syscalls.c **** #include <sys/types.h>
+  14:src/syscalls.c **** #include <sys/stat.h>
+  15:src/syscalls.c **** 
+  16:src/syscalls.c **** #include "stm32f10x.h" /* for _get_PSP() from core_cm3.h*/
+  17:src/syscalls.c **** 
+  18:src/syscalls.c **** #undef errno
+  19:src/syscalls.c **** extern int errno;
+  20:src/syscalls.c **** 
+  21:src/syscalls.c **** int _kill(int pid, int sig)
+  22:src/syscalls.c **** {
+  32              		.loc 1 22 0
+  33              		.cfi_startproc
+  34              		@ args = 0, pretend = 0, frame = 0
+  35              		@ frame_needed = 0, uses_anonymous_args = 0
+  36              		@ link register save eliminated.
+  37              	.LVL0:
+  23:src/syscalls.c **** 	pid = pid; sig = sig; /* avoid warnings */
+  24:src/syscalls.c **** 	errno = EINVAL;
+  38              		.loc 1 24 0
+  39 0000 024B     		ldr	r3, .L2
+  40 0002 1622     		movs	r2, #22
+  41 0004 1A60     		str	r2, [r3, #0]
+  25:src/syscalls.c **** 	return -1;
+  26:src/syscalls.c **** }
+  42              		.loc 1 26 0
+  43 0006 4FF0FF30 		mov	r0, #-1
+  44 000a 7047     		bx	lr
+  45              	.L3:
+  46              		.align	2
+  47              	.L2:
+  48 000c 00000000 		.word	errno
+  49              		.cfi_endproc
+  50              	.LFE29:
+  52              		.section	.text._exit,"ax",%progbits
+  53              		.align	1
+  54              		.global	_exit
+  55              		.thumb
+  56              		.thumb_func
+  58              	_exit:
+  59              	.LFB30:
+  27:src/syscalls.c **** 
+  28:src/syscalls.c **** void _exit(int status)
+  29:src/syscalls.c **** {
+  60              		.loc 1 29 0
+  61              		.cfi_startproc
+  62              		@ Volatile: function does not return.
+  63              		@ args = 0, pretend = 0, frame = 0
+  64              		@ frame_needed = 0, uses_anonymous_args = 0
+  65              		@ link register save eliminated.
+  66              	.LVL1:
+  67              	.L5:
+  68 0000 FEE7     		b	.L5
+  69              		.cfi_endproc
+  70              	.LFE30:
+  72              		.section	.text._getpid,"ax",%progbits
+  73              		.align	1
+  74              		.global	_getpid
+  75              		.thumb
+  76              		.thumb_func
+  78              	_getpid:
+  79              	.LFB31:
+  30:src/syscalls.c **** 	while(1) {;}
+  31:src/syscalls.c **** }
+  32:src/syscalls.c **** 
+  33:src/syscalls.c **** int _getpid(void)
+  34:src/syscalls.c **** {
+  80              		.loc 1 34 0
+  81              		.cfi_startproc
+  82              		@ args = 0, pretend = 0, frame = 0
+  83              		@ frame_needed = 0, uses_anonymous_args = 0
+  84              		@ link register save eliminated.
+  35:src/syscalls.c **** 	return 1;
+  36:src/syscalls.c **** }
+  85              		.loc 1 36 0
+  86 0000 0120     		movs	r0, #1
+  87 0002 7047     		bx	lr
+  88              		.cfi_endproc
+  89              	.LFE31:
+  91              		.section	.text.get_heap_end,"ax",%progbits
+  92              		.align	1
+  93              		.global	get_heap_end
+  94              		.thumb
+  95              		.thumb_func
+  97              	get_heap_end:
+  98              	.LFB32:
+  37:src/syscalls.c **** 
+  38:src/syscalls.c **** 
+  39:src/syscalls.c **** extern char _end; /* Defined by the linker */
+  40:src/syscalls.c **** static char *heap_end;
+  41:src/syscalls.c **** 
+  42:src/syscalls.c **** char* get_heap_end(void)
+  43:src/syscalls.c **** {
+  99              		.loc 1 43 0
+ 100              		.cfi_startproc
+ 101              		@ args = 0, pretend = 0, frame = 0
+ 102              		@ frame_needed = 0, uses_anonymous_args = 0
+ 103              		@ link register save eliminated.
+  44:src/syscalls.c **** 	return (char*) heap_end;
+  45:src/syscalls.c **** }
+ 104              		.loc 1 45 0
+ 105 0000 014B     		ldr	r3, .L8
+ 106 0002 1868     		ldr	r0, [r3, #0]
+ 107 0004 7047     		bx	lr
+ 108              	.L9:
+ 109 0006 00BF     		.align	2
+ 110              	.L8:
+ 111 0008 00000000 		.word	.LANCHOR0
+ 112              		.cfi_endproc
+ 113              	.LFE32:
+ 115              		.section	.text.get_stack_top,"ax",%progbits
+ 116              		.align	1
+ 117              		.global	get_stack_top
+ 118              		.thumb
+ 119              		.thumb_func
+ 121              	get_stack_top:
+ 122              	.LFB33:
+  46:src/syscalls.c **** 
+  47:src/syscalls.c **** char* get_stack_top(void)
+  48:src/syscalls.c **** {
+ 123              		.loc 1 48 0
+ 124              		.cfi_startproc
+ 125              		@ args = 0, pretend = 0, frame = 0
+ 126              		@ frame_needed = 0, uses_anonymous_args = 0
+ 127              		@ link register save eliminated.
+  49:src/syscalls.c **** 	return (char*) __get_MSP();
+  50:src/syscalls.c **** 	//return (char*) __get_PSP();
+  51:src/syscalls.c **** }
+ 128              		.loc 1 51 0
+  49:src/syscalls.c **** 	return (char*) __get_MSP();
+ 129              		.loc 1 49 0
+ 130 0000 FFF7FEBF 		b	__get_MSP
+ 131              		.cfi_endproc
+ 132              	.LFE33:
+ 134              		.section	.text._sbrk,"ax",%progbits
+ 135              		.align	1
+ 136              		.global	_sbrk
+ 137              		.thumb
+ 138              		.thumb_func
+ 140              	_sbrk:
+ 141              	.LFB34:
+  52:src/syscalls.c **** 
+  53:src/syscalls.c **** caddr_t _sbrk(int incr)
+  54:src/syscalls.c **** {
+ 142              		.loc 1 54 0
+ 143              		.cfi_startproc
+ 144              		@ args = 0, pretend = 0, frame = 0
+ 145              		@ frame_needed = 0, uses_anonymous_args = 0
+ 146              	.LVL2:
+  55:src/syscalls.c **** 	char *prev_heap_end;
+  56:src/syscalls.c **** #if SBRK_VERBOSE
+  57:src/syscalls.c **** #endif
+  58:src/syscalls.c **** 	if (heap_end == 0) {
+ 147              		.loc 1 58 0
+ 148 0000 0A4B     		ldr	r3, .L14
+  54:src/syscalls.c **** {
+ 149              		.loc 1 54 0
+ 150 0002 70B5     		push	{r4, r5, r6, lr}
+ 151              	.LCFI0:
+ 152              		.cfi_def_cfa_offset 16
+ 153              		.loc 1 58 0
+ 154 0004 1A68     		ldr	r2, [r3, #0]
+  54:src/syscalls.c **** {
+ 155              		.loc 1 54 0
+ 156 0006 0646     		mov	r6, r0
+ 157              		.cfi_offset 14, -4
+ 158              		.cfi_offset 6, -8
+ 159              		.cfi_offset 5, -12
+ 160              		.cfi_offset 4, -16
+ 161              		.loc 1 58 0
+ 162 0008 0AB9     		cbnz	r2, .L12
+  59:src/syscalls.c **** 		heap_end = &_end;
+ 163              		.loc 1 59 0
+ 164 000a 094A     		ldr	r2, .L14+4
+ 165 000c 1A60     		str	r2, [r3, #0]
+ 166              	.L12:
+  60:src/syscalls.c **** 	}
+  61:src/syscalls.c **** 	prev_heap_end = heap_end;
+ 167              		.loc 1 61 0
+ 168 000e 1C68     		ldr	r4, [r3, #0]
+ 169              	.LVL3:
+  62:src/syscalls.c **** #if 1
+  63:src/syscalls.c **** 	if (heap_end + incr > get_stack_top()) {
+ 170              		.loc 1 63 0
+ 171 0010 FFF7FEFF 		bl	get_stack_top
+ 172              	.LVL4:
+ 173 0014 A319     		adds	r3, r4, r6
+ 174 0016 9842     		cmp	r0, r3
+  61:src/syscalls.c **** 	prev_heap_end = heap_end;
+ 175              		.loc 1 61 0
+ 176 0018 044D     		ldr	r5, .L14
+ 177              		.loc 1 63 0
+ 178 001a 01D2     		bcs	.L13
+  64:src/syscalls.c **** 		abort();
+ 179              		.loc 1 64 0
+ 180 001c FFF7FEFF 		bl	abort
+ 181              	.L13:
+  65:src/syscalls.c **** 	}
+  66:src/syscalls.c **** #endif
+  67:src/syscalls.c **** 	heap_end += incr;
+ 182              		.loc 1 67 0
+ 183 0020 2B68     		ldr	r3, [r5, #0]
+  68:src/syscalls.c **** 	return (caddr_t) prev_heap_end;
+  69:src/syscalls.c **** }
+ 184              		.loc 1 69 0
+ 185 0022 2046     		mov	r0, r4
+  67:src/syscalls.c **** 	heap_end += incr;
+ 186              		.loc 1 67 0
+ 187 0024 9E19     		adds	r6, r3, r6
+ 188              	.LVL5:
+ 189 0026 2E60     		str	r6, [r5, #0]
+ 190              		.loc 1 69 0
+ 191 0028 70BD     		pop	{r4, r5, r6, pc}
+ 192              	.L15:
+ 193 002a 00BF     		.align	2
+ 194              	.L14:
+ 195 002c 00000000 		.word	.LANCHOR0
+ 196 0030 00000000 		.word	_end
+ 197              		.cfi_endproc
+ 198              	.LFE34:
+ 200              		.section	.text._close,"ax",%progbits
+ 201              		.align	1
+ 202              		.global	_close
+ 203              		.thumb
+ 204              		.thumb_func
+ 206              	_close:
+ 207              	.LFB35:
+  70:src/syscalls.c **** 
+  71:src/syscalls.c **** int _close(int file)
+  72:src/syscalls.c **** {
+ 208              		.loc 1 72 0
+ 209              		.cfi_startproc
+ 210              		@ args = 0, pretend = 0, frame = 0
+ 211              		@ frame_needed = 0, uses_anonymous_args = 0
+ 212              		@ link register save eliminated.
+ 213              	.LVL6:
+  73:src/syscalls.c **** 	file = file; /* avoid warning */
+  74:src/syscalls.c **** 	return -1;
+  75:src/syscalls.c **** }
+ 214              		.loc 1 75 0
+ 215 0000 4FF0FF30 		mov	r0, #-1
+ 216 0004 7047     		bx	lr
+ 217              		.cfi_endproc
+ 218              	.LFE35:
+ 220              		.section	.text._fstat,"ax",%progbits
+ 221              		.align	1
+ 222              		.global	_fstat
+ 223              		.thumb
+ 224              		.thumb_func
+ 226              	_fstat:
+ 227              	.LFB36:
+  76:src/syscalls.c **** 
+  77:src/syscalls.c **** int _fstat(int file, struct stat *st)
+  78:src/syscalls.c **** {
+ 228              		.loc 1 78 0
+ 229              		.cfi_startproc
+ 230              		@ args = 0, pretend = 0, frame = 0
+ 231              		@ frame_needed = 0, uses_anonymous_args = 0
+ 232              		@ link register save eliminated.
+ 233              	.LVL7:
+  79:src/syscalls.c **** 	file = file; /* avoid warning */
+  80:src/syscalls.c **** 	st->st_mode = S_IFCHR;
+ 234              		.loc 1 80 0
+ 235 0000 4FF40053 		mov	r3, #8192
+ 236 0004 4B60     		str	r3, [r1, #4]
+  81:src/syscalls.c **** 	return 0;
+  82:src/syscalls.c **** }
+ 237              		.loc 1 82 0
+ 238 0006 0020     		movs	r0, #0
+ 239 0008 7047     		bx	lr
+ 240              		.cfi_endproc
+ 241              	.LFE36:
+ 243              		.section	.text._isatty,"ax",%progbits
+ 244              		.align	1
+ 245              		.global	_isatty
+ 246              		.thumb
+ 247              		.thumb_func
+ 249              	_isatty:
+ 250              	.LFB37:
+  83:src/syscalls.c **** 
+  84:src/syscalls.c **** int _isatty(int file)
+  85:src/syscalls.c **** {
+ 251              		.loc 1 85 0
+ 252              		.cfi_startproc
+ 253              		@ args = 0, pretend = 0, frame = 0
+ 254              		@ frame_needed = 0, uses_anonymous_args = 0
+ 255              		@ link register save eliminated.
+ 256              	.LVL8:
+  86:src/syscalls.c **** 	file = file; /* avoid warning */
+  87:src/syscalls.c **** 	return 1;
+  88:src/syscalls.c **** }
+ 257              		.loc 1 88 0
+ 258 0000 0120     		movs	r0, #1
+ 259 0002 7047     		bx	lr
+ 260              		.cfi_endproc
+ 261              	.LFE37:
+ 263              		.section	.text._lseek,"ax",%progbits
+ 264              		.align	1
+ 265              		.global	_lseek
+ 266              		.thumb
+ 267              		.thumb_func
+ 269              	_lseek:
+ 270              	.LFB38:
+  89:src/syscalls.c **** 
+  90:src/syscalls.c **** int _lseek(int file, int ptr, int dir) {
+ 271              		.loc 1 90 0
+ 272              		.cfi_startproc
+ 273              		@ args = 0, pretend = 0, frame = 0
+ 274              		@ frame_needed = 0, uses_anonymous_args = 0
+ 275              		@ link register save eliminated.
+ 276              	.LVL9:
+  91:src/syscalls.c **** 	file = file; /* avoid warning */
+  92:src/syscalls.c **** 	ptr = ptr; /* avoid warning */
+  93:src/syscalls.c **** 	dir = dir; /* avoid warning */
+  94:src/syscalls.c **** 	return 0;
+  95:src/syscalls.c **** }
+ 277              		.loc 1 95 0
+ 278 0000 0020     		movs	r0, #0
+ 279 0002 7047     		bx	lr
+ 280              		.cfi_endproc
+ 281              	.LFE38:
+ 283              		.section	.text._read,"ax",%progbits
+ 284              		.align	1
+ 285              		.global	_read
+ 286              		.thumb
+ 287              		.thumb_func
+ 289              	_read:
+ 290              	.LFB39:
+  96:src/syscalls.c **** 
+  97:src/syscalls.c **** int _read(int file, char *ptr, int len)
+  98:src/syscalls.c **** {
+ 291              		.loc 1 98 0
+ 292              		.cfi_startproc
+ 293              		@ args = 0, pretend = 0, frame = 0
+ 294              		@ frame_needed = 0, uses_anonymous_args = 0
+ 295              		@ link register save eliminated.
+ 296              	.LVL10:
+  99:src/syscalls.c **** 	file = file; /* avoid warning */
+ 100:src/syscalls.c **** 	ptr = ptr; /* avoid warning */
+ 101:src/syscalls.c **** 	len = len; /* avoid warning */
+ 102:src/syscalls.c **** 	return 0;
+ 103:src/syscalls.c **** }
+ 297              		.loc 1 103 0
+ 298 0000 0020     		movs	r0, #0
+ 299 0002 7047     		bx	lr
+ 300              		.cfi_endproc
+ 301              	.LFE39:
+ 303              		.section	.text._write,"ax",%progbits
+ 304              		.align	1
+ 305              		.global	_write
+ 306              		.thumb
+ 307              		.thumb_func
+ 309              	_write:
+ 310              	.LFB40:
+ 104:src/syscalls.c **** 
+ 105:src/syscalls.c **** int _write(int file, char *ptr, int len)
+ 106:src/syscalls.c **** {
+ 311              		.loc 1 106 0
+ 312              		.cfi_startproc
+ 313              		@ args = 0, pretend = 0, frame = 0
+ 314              		@ frame_needed = 0, uses_anonymous_args = 0
+ 315              		@ link register save eliminated.
+ 316              	.LVL11:
+ 107:src/syscalls.c **** 	return len;
+ 108:src/syscalls.c **** }
+ 317              		.loc 1 108 0
+ 318 0000 1046     		mov	r0, r2
+ 319              	.LVL12:
+ 320 0002 7047     		bx	lr
+ 321              		.cfi_endproc
+ 322              	.LFE40:
+ 324              		.section	.bss.heap_end,"aw",%nobits
+ 325              		.align	2
+ 326              		.set	.LANCHOR0,. + 0
+ 329              	heap_end:
+ 330 0000 00000000 		.space	4
+ 331              		.text
+ 332              	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 syscalls.c
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:24     .text._kill:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:29     .text._kill:00000000 _kill
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:48     .text._kill:0000000c $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:53     .text._exit:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:58     .text._exit:00000000 _exit
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:73     .text._getpid:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:78     .text._getpid:00000000 _getpid
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:92     .text.get_heap_end:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:97     .text.get_heap_end:00000000 get_heap_end
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:111    .text.get_heap_end:00000008 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:116    .text.get_stack_top:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:121    .text.get_stack_top:00000000 get_stack_top
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:135    .text._sbrk:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:140    .text._sbrk:00000000 _sbrk
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:195    .text._sbrk:0000002c $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:201    .text._close:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:206    .text._close:00000000 _close
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:221    .text._fstat:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:226    .text._fstat:00000000 _fstat
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:244    .text._isatty:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:249    .text._isatty:00000000 _isatty
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:264    .text._lseek:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:269    .text._lseek:00000000 _lseek
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:284    .text._read:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:289    .text._read:00000000 _read
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:304    .text._write:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:309    .text._write:00000000 _write
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:325    .bss.heap_end:00000000 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccWbXOI1.s:329    .bss.heap_end:00000000 heap_end
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+errno
+__get_MSP
+abort
+_end

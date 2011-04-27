@@ -1,0 +1,1089 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 18, 4
+  12              		.thumb
+  13              		.file	"itg3200.c"
+  21              	.Ltext0:
+  22              		.cfi_sections	.debug_frame
+  23              		.section	.text.I2C1_EV_IRQHandler,"ax",%progbits
+  24              		.align	1
+  25              		.global	I2C1_EV_IRQHandler
+  26              		.thumb
+  27              		.thumb_func
+  29              	I2C1_EV_IRQHandler:
+  30              	.LFB29:
+  31              		.file 1 "src/hal/itg3200.c"
+   1:src/hal/itg3200.c **** /*
+   2:src/hal/itg3200.c **** 	FLYLess
+   3:src/hal/itg3200.c **** 	flyless.wikidot.com
+   4:src/hal/itg3200.c **** 	contact: <m.bubestinger@gmail.com>
+   5:src/hal/itg3200.c **** 
+   6:src/hal/itg3200.c **** 
+   7:src/hal/itg3200.c ****   	This file is part of FLYless.
+   8:src/hal/itg3200.c **** 
+   9:src/hal/itg3200.c ****     FLYLess is free software: you can redistribute it and/or modify
+  10:src/hal/itg3200.c ****     it under the terms of the GNU General Public License as published by
+  11:src/hal/itg3200.c ****     the Free Software Foundation, either version 3 of the License, or
+  12:src/hal/itg3200.c ****     (at your option) any later version.
+  13:src/hal/itg3200.c **** 
+  14:src/hal/itg3200.c ****     FLYLess is distributed in the hope that it will be useful,
+  15:src/hal/itg3200.c ****     but WITHOUT ANY WARRANTY; without even the implied warranty of
+  16:src/hal/itg3200.c ****     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  17:src/hal/itg3200.c ****     GNU General Public License for more details.
+  18:src/hal/itg3200.c **** 
+  19:src/hal/itg3200.c ****     You should have received a copy of the GNU General Public License
+  20:src/hal/itg3200.c ****     along with FLYLess.  If not, see <http://www.gnu.org/licenses/>.
+  21:src/hal/itg3200.c **** */
+  22:src/hal/itg3200.c **** 
+  23:src/hal/itg3200.c **** 
+  24:src/hal/itg3200.c **** 
+  25:src/hal/itg3200.c **** /**
+  26:src/hal/itg3200.c ****  * @file itg3200.c
+  27:src/hal/itg3200.c ****  * @author Michael Bubestinger
+  28:src/hal/itg3200.c ****  *
+  29:src/hal/itg3200.c ****  * C-File for Invesense ITG3200
+  30:src/hal/itg3200.c ****  * Datasheet: http://invensense.com/mems/gyro/documents/PS-ITG-3200-00-01.4.pdf
+  31:src/hal/itg3200.c ****  */
+  32:src/hal/itg3200.c **** 
+  33:src/hal/itg3200.c **** 
+  34:src/hal/itg3200.c **** 
+  35:src/hal/itg3200.c **** #include "FreeRTOS.h"
+  36:src/hal/itg3200.c **** #include "task.h"
+  37:src/hal/itg3200.c **** 
+  38:src/hal/itg3200.c **** #include "itg3200.h"
+  39:src/hal/itg3200.c **** 
+  40:src/hal/itg3200.c **** #include "stm32f10x_conf.h"
+  41:src/hal/itg3200.c **** #include "stm32f10x.h"
+  42:src/hal/itg3200.c **** #include "uart.h"
+  43:src/hal/itg3200.c **** 
+  44:src/hal/itg3200.c **** #include "mav_vect.h"
+  45:src/hal/itg3200.c **** 
+  46:src/hal/itg3200.c **** #include <stdio.h>
+  47:src/hal/itg3200.c **** 
+  48:src/hal/itg3200.c **** 
+  49:src/hal/itg3200.c **** 
+  50:src/hal/itg3200.c **** volatile ITG3200_Dir ITG3200_DIR;
+  51:src/hal/itg3200.c **** volatile uint8_t ITG3200_REGISTER = 0;
+  52:src/hal/itg3200.c **** volatile uint8_t ITG3200_TX_DATA = 0;
+  53:src/hal/itg3200.c **** volatile uint8_t ITG3200_RX_DATA = 0;
+  54:src/hal/itg3200.c **** volatile uint8_t ITG3200_BLOCKED = 0;
+  55:src/hal/itg3200.c **** 
+  56:src/hal/itg3200.c **** float_vect3* gyro_offset;
+  57:src/hal/itg3200.c **** 
+  58:src/hal/itg3200.c **** uint8_t TX_ID = 0;
+  59:src/hal/itg3200.c **** uint8_t RX_ID = 0;
+  60:src/hal/itg3200.c **** 
+  61:src/hal/itg3200.c **** void I2C1_EV_IRQHandler()
+  62:src/hal/itg3200.c **** {
+  32              		.loc 1 62 0
+  33              		.cfi_startproc
+  34              		@ args = 0, pretend = 0, frame = 0
+  35              		@ frame_needed = 0, uses_anonymous_args = 0
+  36 0000 10B5     		push	{r4, lr}
+  37              	.LCFI0:
+  38              		.cfi_def_cfa_offset 8
+  63:src/hal/itg3200.c **** 	/*
+  64:src/hal/itg3200.c **** 	 * state machine for the whole I2C events
+  65:src/hal/itg3200.c **** 	 */
+  66:src/hal/itg3200.c **** 	switch (I2C_GetLastEvent(I2C1))
+  39              		.loc 1 66 0
+  40 0002 2C48     		ldr	r0, .L16
+  41              		.cfi_offset 14, -4
+  42              		.cfi_offset 4, -8
+  43 0004 FFF7FEFF 		bl	I2C_GetLastEvent
+  44 0008 2B4B     		ldr	r3, .L16+4
+  45 000a 9842     		cmp	r0, r3
+  46 000c 41D0     		beq	.L5
+  47 000e 06D8     		bhi	.L8
+  48 0010 3F3B     		subs	r3, r3, #63
+  49 0012 9842     		cmp	r0, r3
+  50 0014 0AD0     		beq	.L3
+  51 0016 0133     		adds	r3, r3, #1
+  52 0018 9842     		cmp	r0, r3
+  53 001a 49D1     		bne	.L1
+  54 001c 42E0     		b	.L14
+  55              	.L8:
+  56 001e 274B     		ldr	r3, .L16+8
+  57 0020 9842     		cmp	r0, r3
+  58 0022 16D0     		beq	.L6
+  59 0024 0233     		adds	r3, r3, #2
+  60 0026 9842     		cmp	r0, r3
+  61 0028 42D1     		bne	.L1
+  62 002a 19E0     		b	.L15
+  63              	.L3:
+  67:src/hal/itg3200.c **** 	{
+  68:src/hal/itg3200.c **** 
+  69:src/hal/itg3200.c **** 		/*
+  70:src/hal/itg3200.c **** 		 * Master Mode
+  71:src/hal/itg3200.c **** 		 */
+  72:src/hal/itg3200.c **** 		case I2C_EVENT_MASTER_MODE_SELECT:
+  73:src/hal/itg3200.c **** 			/*
+  74:src/hal/itg3200.c **** 			 * we want to transmit a single byte
+  75:src/hal/itg3200.c **** 			 */
+  76:src/hal/itg3200.c **** 			if(ITG3200_DIR == TX)
+  64              		.loc 1 76 0
+  65 002c 244B     		ldr	r3, .L16+12
+  66 002e 1A78     		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+  67 0030 62B1     		cbz	r2, .L13
+  68              	.L9:
+  77:src/hal/itg3200.c **** 			{
+  78:src/hal/itg3200.c **** 				I2C_Send7bitAddress(I2C1, ITGADDRESS, I2C_Direction_Transmitter);
+  79:src/hal/itg3200.c **** 			/*
+  80:src/hal/itg3200.c **** 			 * we want to read a register value
+  81:src/hal/itg3200.c **** 			 * first step is TRANSMITTING the register address then RECEIVE the data
+  82:src/hal/itg3200.c ****  			 */
+  83:src/hal/itg3200.c **** 			}else if(ITG3200_DIR == TXREG)
+  69              		.loc 1 83 0
+  70 0032 1A78     		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+  71 0034 022A     		cmp	r2, #2
+  72 0036 06D1     		bne	.L10
+  84:src/hal/itg3200.c **** 			{
+  85:src/hal/itg3200.c **** 				I2C_Send7bitAddress(I2C1, ITGADDRESS, I2C_Direction_Transmitter);
+  73              		.loc 1 85 0
+  74 0038 1E48     		ldr	r0, .L16
+  75 003a D021     		movs	r1, #208
+  76 003c 023A     		subs	r2, r2, #2
+  77              	.L12:
+  86:src/hal/itg3200.c **** 			/*
+  87:src/hal/itg3200.c **** 			 * we want to receive something
+  88:src/hal/itg3200.c **** 			 */
+  89:src/hal/itg3200.c **** 			}else if(ITG3200_DIR == RX)
+  90:src/hal/itg3200.c **** 			{
+  91:src/hal/itg3200.c **** 				I2C_Send7bitAddress(I2C1, ITGADDRESS, I2C_Direction_Receiver);
+  92:src/hal/itg3200.c **** 			}
+  93:src/hal/itg3200.c **** 		break;
+  94:src/hal/itg3200.c **** 
+  95:src/hal/itg3200.c **** 			/*
+  96:src/hal/itg3200.c **** 			 * we get here after transmitting address + write bit
+  97:src/hal/itg3200.c **** 			 */
+  98:src/hal/itg3200.c **** 		case I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED:
+  99:src/hal/itg3200.c **** 			/*
+ 100:src/hal/itg3200.c **** 			 * Send Register adress
+ 101:src/hal/itg3200.c **** 			 */
+ 102:src/hal/itg3200.c **** 			I2C_SendData(I2C1, ITG3200_REGISTER);
+ 103:src/hal/itg3200.c **** 		break;
+ 104:src/hal/itg3200.c **** 
+ 105:src/hal/itg3200.c **** 			/*
+ 106:src/hal/itg3200.c **** 			 * First byte transmitted
+ 107:src/hal/itg3200.c **** 			 */
+ 108:src/hal/itg3200.c **** 		case I2C_EVENT_MASTER_BYTE_TRANSMITTED:
+ 109:src/hal/itg3200.c **** 			/*
+ 110:src/hal/itg3200.c **** 			 * Send the Data to write and generate STOP event
+ 111:src/hal/itg3200.c **** 			 */
+ 112:src/hal/itg3200.c **** 			if(ITG3200_DIR == TX)
+ 113:src/hal/itg3200.c **** 			{
+ 114:src/hal/itg3200.c **** 				I2C_SendData(I2C1, ITG3200_TX_DATA);
+ 115:src/hal/itg3200.c **** 				I2C_GenerateSTOP(I2C1,ENABLE);
+ 116:src/hal/itg3200.c **** 				ITG3200_BLOCKED = 0;
+ 117:src/hal/itg3200.c **** 			/*
+ 118:src/hal/itg3200.c **** 			 * Generate second start and switch to receiver mode
+ 119:src/hal/itg3200.c **** 			 */
+ 120:src/hal/itg3200.c **** 			}else if(ITG3200_DIR == TXREG)
+ 121:src/hal/itg3200.c **** 			{
+ 122:src/hal/itg3200.c **** 				ITG3200_DIR = RX;
+ 123:src/hal/itg3200.c **** 				I2C_GenerateSTART(I2C1,ENABLE);
+ 124:src/hal/itg3200.c **** 			}
+ 125:src/hal/itg3200.c **** 		break;
+ 126:src/hal/itg3200.c **** 
+ 127:src/hal/itg3200.c **** 			/*
+ 128:src/hal/itg3200.c **** 			 * not implemented
+ 129:src/hal/itg3200.c **** 			 */
+ 130:src/hal/itg3200.c **** 		case I2C_EVENT_MASTER_BYTE_TRANSMITTING:
+ 131:src/hal/itg3200.c **** 		break;
+ 132:src/hal/itg3200.c **** 
+ 133:src/hal/itg3200.c **** 		    /*
+ 134:src/hal/itg3200.c **** 			 * not implemented
+ 135:src/hal/itg3200.c **** 			 */
+ 136:src/hal/itg3200.c **** 		case I2C_EVENT_MASTER_MODE_ADDRESS10:
+ 137:src/hal/itg3200.c **** 		break;
+ 138:src/hal/itg3200.c **** 
+ 139:src/hal/itg3200.c **** 			/*
+ 140:src/hal/itg3200.c **** 			 * we received a byte...
+ 141:src/hal/itg3200.c **** 			 */
+ 142:src/hal/itg3200.c **** 		case I2C_EVENT_MASTER_BYTE_RECEIVED:
+ 143:src/hal/itg3200.c **** 			ITG3200_RX_DATA = I2C_ReceiveData(I2C1);
+ 144:src/hal/itg3200.c **** 			ITG3200_BLOCKED = 0;
+ 145:src/hal/itg3200.c **** 		break;
+ 146:src/hal/itg3200.c **** 			/*
+ 147:src/hal/itg3200.c **** 			 * we switched the mode
+ 148:src/hal/itg3200.c **** 			 */
+ 149:src/hal/itg3200.c **** 		case I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED:
+ 150:src/hal/itg3200.c **** 			I2C_GenerateSTOP(I2C1,ENABLE);
+ 151:src/hal/itg3200.c **** 		break;
+ 152:src/hal/itg3200.c **** 
+ 153:src/hal/itg3200.c **** 	}
+ 154:src/hal/itg3200.c **** }
+  78              		.loc 1 154 0
+  79 003e BDE81040 		pop	{r4, lr}
+  85:src/hal/itg3200.c **** 				I2C_Send7bitAddress(I2C1, ITGADDRESS, I2C_Direction_Transmitter);
+  80              		.loc 1 85 0
+  81 0042 FFF7FEBF 		b	I2C_Send7bitAddress
+  82              	.L10:
+  89:src/hal/itg3200.c **** 			}else if(ITG3200_DIR == RX)
+  83              		.loc 1 89 0
+  84 0046 1A78     		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+  85 0048 012A     		cmp	r2, #1
+  86 004a 31D1     		bne	.L1
+  87              	.L13:
+  91:src/hal/itg3200.c **** 				I2C_Send7bitAddress(I2C1, ITGADDRESS, I2C_Direction_Receiver);
+  88              		.loc 1 91 0
+  89 004c 1948     		ldr	r0, .L16
+  90 004e D021     		movs	r1, #208
+  91 0050 F5E7     		b	.L12
+  92              	.L6:
+ 102:src/hal/itg3200.c **** 			I2C_SendData(I2C1, ITG3200_REGISTER);
+  93              		.loc 1 102 0
+  94 0052 1C4B     		ldr	r3, .L16+16
+  95 0054 1748     		ldr	r0, .L16
+  96 0056 1978     		ldrb	r1, [r3, #0]	@ zero_extendqisi2
+  97              		.loc 1 154 0
+  98 0058 BDE81040 		pop	{r4, lr}
+ 102:src/hal/itg3200.c **** 			I2C_SendData(I2C1, ITG3200_REGISTER);
+  99              		.loc 1 102 0
+ 100 005c FFF7FEBF 		b	I2C_SendData
+ 101              	.L15:
+ 112:src/hal/itg3200.c **** 			if(ITG3200_DIR == TX)
+ 102              		.loc 1 112 0
+ 103 0060 174B     		ldr	r3, .L16+12
+ 104 0062 1C78     		ldrb	r4, [r3, #0]	@ zero_extendqisi2
+ 105 0064 5CB9     		cbnz	r4, .L11
+ 114:src/hal/itg3200.c **** 				I2C_SendData(I2C1, ITG3200_TX_DATA);
+ 106              		.loc 1 114 0
+ 107 0066 184B     		ldr	r3, .L16+20
+ 108 0068 1248     		ldr	r0, .L16
+ 109 006a 1978     		ldrb	r1, [r3, #0]	@ zero_extendqisi2
+ 110 006c FFF7FEFF 		bl	I2C_SendData
+ 115:src/hal/itg3200.c **** 				I2C_GenerateSTOP(I2C1,ENABLE);
+ 111              		.loc 1 115 0
+ 112 0070 1048     		ldr	r0, .L16
+ 113 0072 0121     		movs	r1, #1
+ 114 0074 FFF7FEFF 		bl	I2C_GenerateSTOP
+ 116:src/hal/itg3200.c **** 				ITG3200_BLOCKED = 0;
+ 115              		.loc 1 116 0
+ 116 0078 144B     		ldr	r3, .L16+24
+ 117 007a 1C70     		strb	r4, [r3, #0]
+ 118 007c 10BD     		pop	{r4, pc}
+ 119              	.L11:
+ 120:src/hal/itg3200.c **** 			}else if(ITG3200_DIR == TXREG)
+ 120              		.loc 1 120 0
+ 121 007e 1A78     		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 122 0080 022A     		cmp	r2, #2
+ 123 0082 15D1     		bne	.L1
+ 123:src/hal/itg3200.c **** 				I2C_GenerateSTART(I2C1,ENABLE);
+ 124              		.loc 1 123 0
+ 125 0084 0B48     		ldr	r0, .L16
+ 122:src/hal/itg3200.c **** 				ITG3200_DIR = RX;
+ 126              		.loc 1 122 0
+ 127 0086 0121     		movs	r1, #1
+ 128 0088 1970     		strb	r1, [r3, #0]
+ 129              		.loc 1 154 0
+ 130 008a BDE81040 		pop	{r4, lr}
+ 123:src/hal/itg3200.c **** 				I2C_GenerateSTART(I2C1,ENABLE);
+ 131              		.loc 1 123 0
+ 132 008e FFF7FEBF 		b	I2C_GenerateSTART
+ 133              	.L5:
+ 143:src/hal/itg3200.c **** 			ITG3200_RX_DATA = I2C_ReceiveData(I2C1);
+ 134              		.loc 1 143 0
+ 135 0092 0848     		ldr	r0, .L16
+ 136 0094 FFF7FEFF 		bl	I2C_ReceiveData
+ 137 0098 0D4B     		ldr	r3, .L16+28
+ 144:src/hal/itg3200.c **** 			ITG3200_BLOCKED = 0;
+ 138              		.loc 1 144 0
+ 139 009a 0022     		movs	r2, #0
+ 143:src/hal/itg3200.c **** 			ITG3200_RX_DATA = I2C_ReceiveData(I2C1);
+ 140              		.loc 1 143 0
+ 141 009c 1870     		strb	r0, [r3, #0]
+ 144:src/hal/itg3200.c **** 			ITG3200_BLOCKED = 0;
+ 142              		.loc 1 144 0
+ 143 009e 0B4B     		ldr	r3, .L16+24
+ 144 00a0 1A70     		strb	r2, [r3, #0]
+ 145 00a2 10BD     		pop	{r4, pc}
+ 146              	.L14:
+ 150:src/hal/itg3200.c **** 			I2C_GenerateSTOP(I2C1,ENABLE);
+ 147              		.loc 1 150 0
+ 148 00a4 0348     		ldr	r0, .L16
+ 149 00a6 0121     		movs	r1, #1
+ 150              		.loc 1 154 0
+ 151 00a8 BDE81040 		pop	{r4, lr}
+ 150:src/hal/itg3200.c **** 			I2C_GenerateSTOP(I2C1,ENABLE);
+ 152              		.loc 1 150 0
+ 153 00ac FFF7FEBF 		b	I2C_GenerateSTOP
+ 154              	.L1:
+ 155 00b0 10BD     		pop	{r4, pc}
+ 156              	.L17:
+ 157 00b2 00BF     		.align	2
+ 158              	.L16:
+ 159 00b4 00540040 		.word	1073763328
+ 160 00b8 40000300 		.word	196672
+ 161 00bc 82000700 		.word	458882
+ 162 00c0 00000000 		.word	ITG3200_DIR
+ 163 00c4 00000000 		.word	.LANCHOR0
+ 164 00c8 00000000 		.word	.LANCHOR1
+ 165 00cc 00000000 		.word	.LANCHOR2
+ 166 00d0 00000000 		.word	.LANCHOR3
+ 167              		.cfi_endproc
+ 168              	.LFE29:
+ 170              		.section	.text.I2C2_ER_IRQHandler,"ax",%progbits
+ 171              		.align	1
+ 172              		.global	I2C2_ER_IRQHandler
+ 173              		.thumb
+ 174              		.thumb_func
+ 176              	I2C2_ER_IRQHandler:
+ 177              	.LFB30:
+ 155:src/hal/itg3200.c **** 
+ 156:src/hal/itg3200.c **** /*
+ 157:src/hal/itg3200.c ****  * dummey irq handler
+ 158:src/hal/itg3200.c ****  */
+ 159:src/hal/itg3200.c **** void I2C2_ER_IRQHandler(void)
+ 160:src/hal/itg3200.c **** {
+ 178              		.loc 1 160 0
+ 179              		.cfi_startproc
+ 180              		@ args = 0, pretend = 0, frame = 0
+ 181              		@ frame_needed = 0, uses_anonymous_args = 0
+ 182 0000 10B5     		push	{r4, lr}
+ 183              	.LCFI1:
+ 184              		.cfi_def_cfa_offset 8
+ 161:src/hal/itg3200.c ****   if (I2C_GetITStatus(I2C1, I2C_IT_AF))
+ 185              		.loc 1 161 0
+ 186 0002 0648     		ldr	r0, .L20
+ 187 0004 0649     		ldr	r1, .L20+4
+ 188              		.cfi_offset 14, -4
+ 189              		.cfi_offset 4, -8
+ 190 0006 FFF7FEFF 		bl	I2C_GetITStatus
+ 191 000a 28B1     		cbz	r0, .L18
+ 162:src/hal/itg3200.c ****   {
+ 163:src/hal/itg3200.c ****     I2C_ClearITPendingBit(I2C1, I2C_IT_AF);
+ 192              		.loc 1 163 0
+ 193 000c 0348     		ldr	r0, .L20
+ 194 000e 0449     		ldr	r1, .L20+4
+ 164:src/hal/itg3200.c ****   }
+ 165:src/hal/itg3200.c **** }
+ 195              		.loc 1 165 0
+ 196 0010 BDE81040 		pop	{r4, lr}
+ 163:src/hal/itg3200.c ****     I2C_ClearITPendingBit(I2C1, I2C_IT_AF);
+ 197              		.loc 1 163 0
+ 198 0014 FFF7FEBF 		b	I2C_ClearITPendingBit
+ 199              	.L18:
+ 200 0018 10BD     		pop	{r4, pc}
+ 201              	.L21:
+ 202 001a 00BF     		.align	2
+ 203              	.L20:
+ 204 001c 00540040 		.word	1073763328
+ 205 0020 00040001 		.word	16778240
+ 206              		.cfi_endproc
+ 207              	.LFE30:
+ 209              		.section	.text.ITG_Write,"ax",%progbits
+ 210              		.align	1
+ 211              		.global	ITG_Write
+ 212              		.thumb
+ 213              		.thumb_func
+ 215              	ITG_Write:
+ 216              	.LFB31:
+ 166:src/hal/itg3200.c **** 
+ 167:src/hal/itg3200.c **** void ITG_Write(uint8_t reg, uint8_t data)
+ 168:src/hal/itg3200.c **** {
+ 217              		.loc 1 168 0
+ 218              		.cfi_startproc
+ 219              		@ args = 0, pretend = 0, frame = 0
+ 220              		@ frame_needed = 0, uses_anonymous_args = 0
+ 221              	.LVL0:
+ 222 0000 38B5     		push	{r3, r4, r5, lr}
+ 223              	.LCFI2:
+ 224              		.cfi_def_cfa_offset 16
+ 169:src/hal/itg3200.c **** 	/*
+ 170:src/hal/itg3200.c **** 	 * check if I2C interace is in use
+ 171:src/hal/itg3200.c **** 	 */
+ 172:src/hal/itg3200.c **** 	if(ITG3200_BLOCKED == 0)
+ 225              		.loc 1 172 0
+ 226 0002 094C     		ldr	r4, .L25
+ 227              		.cfi_offset 14, -4
+ 228              		.cfi_offset 5, -8
+ 229              		.cfi_offset 4, -12
+ 230              		.cfi_offset 3, -16
+ 231 0004 2278     		ldrb	r2, [r4, #0]	@ zero_extendqisi2
+ 232 0006 5AB9     		cbnz	r2, .L24
+ 173:src/hal/itg3200.c **** 	{
+ 174:src/hal/itg3200.c **** 		ITG3200_BLOCKED = 1; // block it
+ 175:src/hal/itg3200.c **** 
+ 176:src/hal/itg3200.c **** 		/*
+ 177:src/hal/itg3200.c **** 		 * fill the global buffer
+ 178:src/hal/itg3200.c **** 		 */
+ 179:src/hal/itg3200.c **** 		ITG3200_REGISTER = reg;
+ 233              		.loc 1 179 0
+ 234 0008 084D     		ldr	r5, .L25+4
+ 174:src/hal/itg3200.c **** 		ITG3200_BLOCKED = 1; // block it
+ 235              		.loc 1 174 0
+ 236 000a 0123     		movs	r3, #1
+ 237 000c 2370     		strb	r3, [r4, #0]
+ 238              		.loc 1 179 0
+ 239 000e 2870     		strb	r0, [r5, #0]
+ 180:src/hal/itg3200.c **** 		ITG3200_DIR = TX;
+ 240              		.loc 1 180 0
+ 241 0010 0748     		ldr	r0, .L25+8
+ 242              	.LVL1:
+ 243 0012 0270     		strb	r2, [r0, #0]
+ 181:src/hal/itg3200.c **** 		ITG3200_TX_DATA = data;
+ 244              		.loc 1 181 0
+ 245 0014 074A     		ldr	r2, .L25+12
+ 182:src/hal/itg3200.c **** 		/*
+ 183:src/hal/itg3200.c **** 		 * start the transmitting
+ 184:src/hal/itg3200.c **** 		 */
+ 185:src/hal/itg3200.c **** 		I2C_GenerateSTART(I2C1,ENABLE);
+ 246              		.loc 1 185 0
+ 247 0016 0848     		ldr	r0, .L25+16
+ 181:src/hal/itg3200.c **** 		ITG3200_TX_DATA = data;
+ 248              		.loc 1 181 0
+ 249 0018 1170     		strb	r1, [r2, #0]
+ 250              		.loc 1 185 0
+ 251 001a 1946     		mov	r1, r3
+ 252              	.LVL2:
+ 253 001c FFF7FEFF 		bl	I2C_GenerateSTART
+ 254              	.LVL3:
+ 255              	.L24:
+ 186:src/hal/itg3200.c **** 	}
+ 187:src/hal/itg3200.c **** 	/*
+ 188:src/hal/itg3200.c **** 	 * wait till finished
+ 189:src/hal/itg3200.c **** 	 */
+ 190:src/hal/itg3200.c **** 	while(ITG3200_BLOCKED == 1);
+ 256              		.loc 1 190 0 discriminator 1
+ 257 0020 2378     		ldrb	r3, [r4, #0]	@ zero_extendqisi2
+ 258 0022 012B     		cmp	r3, #1
+ 259 0024 FCD0     		beq	.L24
+ 191:src/hal/itg3200.c **** }
+ 260              		.loc 1 191 0
+ 261 0026 38BD     		pop	{r3, r4, r5, pc}
+ 262              	.L26:
+ 263              		.align	2
+ 264              	.L25:
+ 265 0028 00000000 		.word	.LANCHOR2
+ 266 002c 00000000 		.word	.LANCHOR0
+ 267 0030 00000000 		.word	ITG3200_DIR
+ 268 0034 00000000 		.word	.LANCHOR1
+ 269 0038 00540040 		.word	1073763328
+ 270              		.cfi_endproc
+ 271              	.LFE31:
+ 273              		.section	.text.ITG_Read,"ax",%progbits
+ 274              		.align	1
+ 275              		.global	ITG_Read
+ 276              		.thumb
+ 277              		.thumb_func
+ 279              	ITG_Read:
+ 280              	.LFB32:
+ 192:src/hal/itg3200.c **** 
+ 193:src/hal/itg3200.c **** uint8_t ITG_Read(uint8_t reg)
+ 194:src/hal/itg3200.c **** {
+ 281              		.loc 1 194 0
+ 282              		.cfi_startproc
+ 283              		@ args = 0, pretend = 0, frame = 0
+ 284              		@ frame_needed = 0, uses_anonymous_args = 0
+ 285              	.LVL4:
+ 286 0000 10B5     		push	{r4, lr}
+ 287              	.LCFI3:
+ 288              		.cfi_def_cfa_offset 8
+ 195:src/hal/itg3200.c **** 	/*
+ 196:src/hal/itg3200.c **** 	 * check if I2C interface is in use
+ 197:src/hal/itg3200.c **** 	 */
+ 198:src/hal/itg3200.c **** 	if(ITG3200_BLOCKED == 0)
+ 289              		.loc 1 198 0
+ 290 0002 094C     		ldr	r4, .L30
+ 291              		.cfi_offset 14, -4
+ 292              		.cfi_offset 4, -8
+ 293 0004 2378     		ldrb	r3, [r4, #0]	@ zero_extendqisi2
+ 294 0006 4BB9     		cbnz	r3, .L29
+ 199:src/hal/itg3200.c **** 	{
+ 200:src/hal/itg3200.c **** 		ITG3200_BLOCKED = 1;	// block it
+ 201:src/hal/itg3200.c **** 		/*
+ 202:src/hal/itg3200.c **** 		 * fill global buffers
+ 203:src/hal/itg3200.c **** 		 */
+ 204:src/hal/itg3200.c **** 		ITG3200_REGISTER = reg;
+ 295              		.loc 1 204 0
+ 296 0008 084B     		ldr	r3, .L30+4
+ 200:src/hal/itg3200.c **** 		ITG3200_BLOCKED = 1;	// block it
+ 297              		.loc 1 200 0
+ 298 000a 0121     		movs	r1, #1
+ 299 000c 2170     		strb	r1, [r4, #0]
+ 300              		.loc 1 204 0
+ 301 000e 1870     		strb	r0, [r3, #0]
+ 205:src/hal/itg3200.c **** 		ITG3200_DIR = TXREG;
+ 302              		.loc 1 205 0
+ 303 0010 074B     		ldr	r3, .L30+8
+ 304 0012 0222     		movs	r2, #2
+ 305 0014 1A70     		strb	r2, [r3, #0]
+ 206:src/hal/itg3200.c **** 		I2C_GenerateSTART(I2C1,ENABLE);
+ 306              		.loc 1 206 0
+ 307 0016 0748     		ldr	r0, .L30+12
+ 308              	.LVL5:
+ 309 0018 FFF7FEFF 		bl	I2C_GenerateSTART
+ 310              	.LVL6:
+ 311              	.L29:
+ 207:src/hal/itg3200.c **** 	}
+ 208:src/hal/itg3200.c **** 	/*
+ 209:src/hal/itg3200.c **** 	 * wait till finished
+ 210:src/hal/itg3200.c **** 	 */
+ 211:src/hal/itg3200.c ****  	while(ITG3200_BLOCKED == 1);
+ 312              		.loc 1 211 0 discriminator 1
+ 313 001c 2378     		ldrb	r3, [r4, #0]	@ zero_extendqisi2
+ 314 001e 012B     		cmp	r3, #1
+ 315 0020 FCD0     		beq	.L29
+ 212:src/hal/itg3200.c ****  	/*
+ 213:src/hal/itg3200.c ****  	 * return data
+ 214:src/hal/itg3200.c ****  	 */
+ 215:src/hal/itg3200.c **** 	return ITG3200_RX_DATA;
+ 316              		.loc 1 215 0
+ 317 0022 054B     		ldr	r3, .L30+16
+ 318 0024 1878     		ldrb	r0, [r3, #0]	@ zero_extendqisi2
+ 216:src/hal/itg3200.c **** }
+ 319              		.loc 1 216 0
+ 320 0026 10BD     		pop	{r4, pc}
+ 321              	.L31:
+ 322              		.align	2
+ 323              	.L30:
+ 324 0028 00000000 		.word	.LANCHOR2
+ 325 002c 00000000 		.word	.LANCHOR0
+ 326 0030 00000000 		.word	ITG3200_DIR
+ 327 0034 00540040 		.word	1073763328
+ 328 0038 00000000 		.word	.LANCHOR3
+ 329              		.cfi_endproc
+ 330              	.LFE32:
+ 332              		.section	.text.ITG_IsBlocked,"ax",%progbits
+ 333              		.align	1
+ 334              		.global	ITG_IsBlocked
+ 335              		.thumb
+ 336              		.thumb_func
+ 338              	ITG_IsBlocked:
+ 339              	.LFB33:
+ 217:src/hal/itg3200.c **** 
+ 218:src/hal/itg3200.c **** uint8_t ITG_IsBlocked()
+ 219:src/hal/itg3200.c **** {
+ 340              		.loc 1 219 0
+ 341              		.cfi_startproc
+ 342              		@ args = 0, pretend = 0, frame = 0
+ 343              		@ frame_needed = 0, uses_anonymous_args = 0
+ 344              		@ link register save eliminated.
+ 220:src/hal/itg3200.c **** 	return ITG3200_BLOCKED;
+ 345              		.loc 1 220 0
+ 346 0000 014B     		ldr	r3, .L33
+ 347 0002 1878     		ldrb	r0, [r3, #0]	@ zero_extendqisi2
+ 221:src/hal/itg3200.c **** }
+ 348              		.loc 1 221 0
+ 349 0004 7047     		bx	lr
+ 350              	.L34:
+ 351 0006 00BF     		.align	2
+ 352              	.L33:
+ 353 0008 00000000 		.word	.LANCHOR2
+ 354              		.cfi_endproc
+ 355              	.LFE33:
+ 357              		.global	__aeabi_i2f
+ 358              		.global	__aeabi_fadd
+ 359              		.global	__aeabi_f2iz
+ 360              		.section	.text.ITG_GetRate,"ax",%progbits
+ 361              		.align	1
+ 362              		.global	ITG_GetRate
+ 363              		.thumb
+ 364              		.thumb_func
+ 366              	ITG_GetRate:
+ 367              	.LFB34:
+ 222:src/hal/itg3200.c **** 
+ 223:src/hal/itg3200.c **** void ITG_GetRate(int16_vect3* rate)
+ 224:src/hal/itg3200.c **** {
+ 368              		.loc 1 224 0
+ 369              		.cfi_startproc
+ 370              		@ args = 0, pretend = 0, frame = 0
+ 371              		@ frame_needed = 0, uses_anonymous_args = 0
+ 372              	.LVL7:
+ 373 0000 2DE9F84F 		push	{r3, r4, r5, r6, r7, r8, r9, sl, fp, lr}
+ 374              	.LCFI4:
+ 375              		.cfi_def_cfa_offset 40
+ 376              		.loc 1 224 0
+ 377 0004 0446     		mov	r4, r0
+ 378              		.cfi_offset 14, -4
+ 379              		.cfi_offset 11, -8
+ 380              		.cfi_offset 10, -12
+ 381              		.cfi_offset 9, -16
+ 382              		.cfi_offset 8, -20
+ 383              		.cfi_offset 7, -24
+ 384              		.cfi_offset 6, -28
+ 385              		.cfi_offset 5, -32
+ 386              		.cfi_offset 4, -36
+ 387              		.cfi_offset 3, -40
+ 225:src/hal/itg3200.c **** 	int16_t data[3];
+ 226:src/hal/itg3200.c **** 
+ 227:src/hal/itg3200.c **** 	/*
+ 228:src/hal/itg3200.c **** 	 * read all values
+ 229:src/hal/itg3200.c **** 	 */
+ 230:src/hal/itg3200.c **** 	data[0]  = (ITG_Read(GYRO_XOUT_H) << 8);
+ 388              		.loc 1 230 0
+ 389 0006 1D20     		movs	r0, #29
+ 390              	.LVL8:
+ 391 0008 FFF7FEFF 		bl	ITG_Read
+ 392 000c 8346     		mov	fp, r0
+ 231:src/hal/itg3200.c **** 	data[0] |=  ITG_Read(GYRO_XOUT_L);
+ 393              		.loc 1 231 0
+ 394 000e 1E20     		movs	r0, #30
+ 395 0010 FFF7FEFF 		bl	ITG_Read
+ 396 0014 8246     		mov	sl, r0
+ 232:src/hal/itg3200.c **** 
+ 233:src/hal/itg3200.c **** 	data[1]  = (ITG_Read(GYRO_YOUT_H) << 8);
+ 397              		.loc 1 233 0
+ 398 0016 1F20     		movs	r0, #31
+ 399 0018 FFF7FEFF 		bl	ITG_Read
+ 400 001c 8146     		mov	r9, r0
+ 234:src/hal/itg3200.c **** 	data[1] |=  ITG_Read(GYRO_YOUT_L);
+ 401              		.loc 1 234 0
+ 402 001e 2020     		movs	r0, #32
+ 403 0020 FFF7FEFF 		bl	ITG_Read
+ 404 0024 8046     		mov	r8, r0
+ 235:src/hal/itg3200.c **** 
+ 236:src/hal/itg3200.c **** 	data[2]  = (ITG_Read(GYRO_ZOUT_H) << 8);
+ 405              		.loc 1 236 0
+ 406 0026 2120     		movs	r0, #33
+ 407 0028 FFF7FEFF 		bl	ITG_Read
+ 408 002c 0746     		mov	r7, r0
+ 237:src/hal/itg3200.c **** 	data[2] |=  ITG_Read(GYRO_ZOUT_L);
+ 409              		.loc 1 237 0
+ 410 002e 2220     		movs	r0, #34
+ 411 0030 FFF7FEFF 		bl	ITG_Read
+ 238:src/hal/itg3200.c **** 
+ 239:src/hal/itg3200.c **** 	rate->x = data[0] + gyro_offset->x;
+ 412              		.loc 1 239 0
+ 413 0034 134B     		ldr	r3, .L36
+ 231:src/hal/itg3200.c **** 	data[0] |=  ITG_Read(GYRO_XOUT_L);
+ 414              		.loc 1 231 0
+ 415 0036 4AEA0B2A 		orr	sl, sl, fp, lsl #8
+ 416              		.loc 1 239 0
+ 417 003a 1D68     		ldr	r5, [r3, #0]
+ 237:src/hal/itg3200.c **** 	data[2] |=  ITG_Read(GYRO_ZOUT_L);
+ 418              		.loc 1 237 0
+ 419 003c 0646     		mov	r6, r0
+ 420              		.loc 1 239 0
+ 421 003e 0FFA8AF0 		sxth	r0, sl
+ 422 0042 FFF7FEFF 		bl	__aeabi_i2f
+ 423 0046 2968     		ldr	r1, [r5, #0]	@ float
+ 424 0048 FFF7FEFF 		bl	__aeabi_fadd
+ 425 004c FFF7FEFF 		bl	__aeabi_f2iz
+ 234:src/hal/itg3200.c **** 	data[1] |=  ITG_Read(GYRO_YOUT_L);
+ 426              		.loc 1 234 0
+ 427 0050 48EA0928 		orr	r8, r8, r9, lsl #8
+ 428              		.loc 1 239 0
+ 429 0054 2080     		strh	r0, [r4, #0]	@ movhi
+ 240:src/hal/itg3200.c **** 	rate->y = data[1] + gyro_offset->y;
+ 430              		.loc 1 240 0
+ 431 0056 0FFA88F0 		sxth	r0, r8
+ 432 005a FFF7FEFF 		bl	__aeabi_i2f
+ 433 005e 6968     		ldr	r1, [r5, #4]	@ float
+ 434 0060 FFF7FEFF 		bl	__aeabi_fadd
+ 435 0064 FFF7FEFF 		bl	__aeabi_f2iz
+ 237:src/hal/itg3200.c **** 	data[2] |=  ITG_Read(GYRO_ZOUT_L);
+ 436              		.loc 1 237 0
+ 437 0068 46EA0726 		orr	r6, r6, r7, lsl #8
+ 438              		.loc 1 240 0
+ 439 006c 6080     		strh	r0, [r4, #2]	@ movhi
+ 241:src/hal/itg3200.c **** 	rate->z = data[2] + gyro_offset->z;
+ 440              		.loc 1 241 0
+ 441 006e 30B2     		sxth	r0, r6
+ 442 0070 FFF7FEFF 		bl	__aeabi_i2f
+ 443 0074 A968     		ldr	r1, [r5, #8]	@ float
+ 444 0076 FFF7FEFF 		bl	__aeabi_fadd
+ 445 007a FFF7FEFF 		bl	__aeabi_f2iz
+ 446 007e A080     		strh	r0, [r4, #4]	@ movhi
+ 242:src/hal/itg3200.c **** 
+ 243:src/hal/itg3200.c **** }
+ 447              		.loc 1 243 0
+ 448 0080 BDE8F88F 		pop	{r3, r4, r5, r6, r7, r8, r9, sl, fp, pc}
+ 449              	.L37:
+ 450              		.align	2
+ 451              	.L36:
+ 452 0084 00000000 		.word	gyro_offset
+ 453              		.cfi_endproc
+ 454              	.LFE34:
+ 456              		.global	__aeabi_i2d
+ 457              		.global	__aeabi_dmul
+ 458              		.global	__aeabi_d2f
+ 459              		.section	.text.ITG_GetRAD,"ax",%progbits
+ 460              		.align	1
+ 461              		.global	ITG_GetRAD
+ 462              		.thumb
+ 463              		.thumb_func
+ 465              	ITG_GetRAD:
+ 466              	.LFB35:
+ 244:src/hal/itg3200.c **** 
+ 245:src/hal/itg3200.c **** void ITG_GetRAD(int16_vect3 rate_raw, float_vect3* rate_rad)
+ 246:src/hal/itg3200.c **** {
+ 467              		.loc 1 246 0
+ 468              		.cfi_startproc
+ 469              		@ args = 0, pretend = 0, frame = 8
+ 470              		@ frame_needed = 0, uses_anonymous_args = 0
+ 471              	.LVL9:
+ 472 0000 13B5     		push	{r0, r1, r4, lr}
+ 473              	.LCFI5:
+ 474              		.cfi_def_cfa_offset 16
+ 475              		.loc 1 246 0
+ 476 0002 6B46     		mov	r3, sp
+ 477 0004 83E80300 		stmia	r3, {r0, r1}
+ 247:src/hal/itg3200.c **** 	/*
+ 248:src/hal/itg3200.c **** 	 * calculate values in rad/s
+ 249:src/hal/itg3200.c **** 	 */
+ 250:src/hal/itg3200.c **** 	rate_rad->x	= (rate_raw.x) * 0.0012139;	  // to °/s -> / 14.375 //
+ 478              		.loc 1 250 0
+ 479 0008 BDF90000 		ldrsh	r0, [sp, #0]
+ 480              		.cfi_offset 14, -4
+ 481              		.cfi_offset 4, -8
+ 482              		.cfi_offset 1, -12
+ 483              		.cfi_offset 0, -16
+ 246:src/hal/itg3200.c **** {
+ 484              		.loc 1 246 0
+ 485 000c 1446     		mov	r4, r2
+ 486              		.loc 1 250 0
+ 487 000e FFF7FEFF 		bl	__aeabi_i2d
+ 488              	.LVL10:
+ 489 0012 11A3     		adr	r3, .L39
+ 490 0014 D3E90023 		ldrd	r2, [r3]
+ 491 0018 FFF7FEFF 		bl	__aeabi_dmul
+ 492 001c FFF7FEFF 		bl	__aeabi_d2f
+ 493 0020 2060     		str	r0, [r4, #0]	@ float
+ 251:src/hal/itg3200.c **** 	rate_rad->y	= (rate_raw.y) * 0.0012139;	  // to rad/s ->  (x / 14.375) * 0.01745 //
+ 494              		.loc 1 251 0
+ 495 0022 BDF90200 		ldrsh	r0, [sp, #2]
+ 496 0026 FFF7FEFF 		bl	__aeabi_i2d
+ 497 002a 0BA3     		adr	r3, .L39
+ 498 002c D3E90023 		ldrd	r2, [r3]
+ 499 0030 FFF7FEFF 		bl	__aeabi_dmul
+ 500 0034 FFF7FEFF 		bl	__aeabi_d2f
+ 501 0038 6060     		str	r0, [r4, #4]	@ float
+ 252:src/hal/itg3200.c **** 	rate_rad->z = (rate_raw.z) * 0.0012139;	  // == x * 0.0012139 //
+ 502              		.loc 1 252 0
+ 503 003a BDF90400 		ldrsh	r0, [sp, #4]
+ 504 003e FFF7FEFF 		bl	__aeabi_i2d
+ 505 0042 05A3     		adr	r3, .L39
+ 506 0044 D3E90023 		ldrd	r2, [r3]
+ 507 0048 FFF7FEFF 		bl	__aeabi_dmul
+ 508 004c FFF7FEFF 		bl	__aeabi_d2f
+ 509 0050 A060     		str	r0, [r4, #8]	@ float
+ 253:src/hal/itg3200.c **** 
+ 254:src/hal/itg3200.c **** }
+ 510              		.loc 1 254 0
+ 511 0052 1CBD     		pop	{r2, r3, r4, pc}
+ 512              	.L40:
+ 513 0054 AFF30080 		.align	3
+ 514              	.L39:
+ 515 0058 2E443D33 		.word	859653166
+ 516 005c 77E3533F 		.word	1062462327
+ 517              		.cfi_endproc
+ 518              	.LFE35:
+ 520              		.section	.text.ITG_RefOffset,"ax",%progbits
+ 521              		.align	1
+ 522              		.global	ITG_RefOffset
+ 523              		.thumb
+ 524              		.thumb_func
+ 526              	ITG_RefOffset:
+ 527              	.LFB36:
+ 255:src/hal/itg3200.c **** 
+ 256:src/hal/itg3200.c **** 
+ 257:src/hal/itg3200.c **** void ITG_RefOffset(float_vect3* offset)
+ 258:src/hal/itg3200.c **** {
+ 528              		.loc 1 258 0
+ 529              		.cfi_startproc
+ 530              		@ args = 0, pretend = 0, frame = 0
+ 531              		@ frame_needed = 0, uses_anonymous_args = 0
+ 532              		@ link register save eliminated.
+ 533              	.LVL11:
+ 259:src/hal/itg3200.c **** 	gyro_offset = offset;
+ 534              		.loc 1 259 0
+ 535 0000 014B     		ldr	r3, .L42
+ 536 0002 1860     		str	r0, [r3, #0]
+ 260:src/hal/itg3200.c **** }
+ 537              		.loc 1 260 0
+ 538 0004 7047     		bx	lr
+ 539              	.L43:
+ 540 0006 00BF     		.align	2
+ 541              	.L42:
+ 542 0008 00000000 		.word	gyro_offset
+ 543              		.cfi_endproc
+ 544              	.LFE36:
+ 546              		.section	.text.ITG_I2C_Setup,"ax",%progbits
+ 547              		.align	1
+ 548              		.global	ITG_I2C_Setup
+ 549              		.thumb
+ 550              		.thumb_func
+ 552              	ITG_I2C_Setup:
+ 553              	.LFB37:
+ 261:src/hal/itg3200.c **** 
+ 262:src/hal/itg3200.c **** 
+ 263:src/hal/itg3200.c **** void ITG_I2C_Setup()
+ 264:src/hal/itg3200.c **** {
+ 554              		.loc 1 264 0
+ 555              		.cfi_startproc
+ 556              		@ args = 0, pretend = 0, frame = 24
+ 557              		@ frame_needed = 0, uses_anonymous_args = 0
+ 558 0000 70B5     		push	{r4, r5, r6, lr}
+ 559              	.LCFI6:
+ 560              		.cfi_def_cfa_offset 16
+ 265:src/hal/itg3200.c **** 	GPIO_InitTypeDef 	GPIO_InitStructure;
+ 266:src/hal/itg3200.c **** 	I2C_InitTypeDef  	I2C_InitStructure;
+ 267:src/hal/itg3200.c **** 	NVIC_InitTypeDef 	NVIC_InitStructure;
+ 268:src/hal/itg3200.c **** 
+ 269:src/hal/itg3200.c **** 	uint16_t i;
+ 270:src/hal/itg3200.c **** 
+ 271:src/hal/itg3200.c **** 
+ 272:src/hal/itg3200.c **** 
+ 273:src/hal/itg3200.c ****     I2C_Cmd(I2C1, ENABLE);
+ 561              		.loc 1 273 0
+ 562 0002 0121     		movs	r1, #1
+ 264:src/hal/itg3200.c **** {
+ 563              		.loc 1 264 0
+ 564 0004 86B0     		sub	sp, sp, #24
+ 565              	.LCFI7:
+ 566              		.cfi_def_cfa_offset 40
+ 567              		.loc 1 273 0
+ 568 0006 2948     		ldr	r0, .L45
+ 569              		.cfi_offset 14, -4
+ 570              		.cfi_offset 6, -8
+ 571              		.cfi_offset 5, -12
+ 572              		.cfi_offset 4, -16
+ 573 0008 FFF7FEFF 		bl	I2C_Cmd
+ 274:src/hal/itg3200.c ****   	I2C_InitStructure.I2C_Mode = I2C_Mode_I2C;
+ 275:src/hal/itg3200.c ****   	I2C_InitStructure.I2C_DutyCycle = I2C_DutyCycle_2;
+ 574              		.loc 1 275 0
+ 575 000c 4BF6FF73 		movw	r3, 49151	@ movhi
+ 576 0010 ADF80630 		strh	r3, [sp, #6]	@ movhi
+ 276:src/hal/itg3200.c ****   	I2C_InitStructure.I2C_OwnAddress1 = OWNADDRESS;
+ 577              		.loc 1 276 0
+ 578 0014 3023     		movs	r3, #48
+ 579 0016 ADF80830 		strh	r3, [sp, #8]	@ movhi
+ 277:src/hal/itg3200.c ****   	I2C_InitStructure.I2C_Ack = I2C_Ack_Disable;
+ 278:src/hal/itg3200.c ****   	I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
+ 580              		.loc 1 278 0
+ 581 001a 4FF48043 		mov	r3, #16384	@ movhi
+ 582 001e ADF80C30 		strh	r3, [sp, #12]	@ movhi
+ 279:src/hal/itg3200.c ****   	I2C_InitStructure.I2C_ClockSpeed = I2C_SPEED;
+ 583              		.loc 1 279 0
+ 584 0022 234B     		ldr	r3, .L45+4
+ 585 0024 06A9     		add	r1, sp, #24
+ 274:src/hal/itg3200.c ****   	I2C_InitStructure.I2C_Mode = I2C_Mode_I2C;
+ 586              		.loc 1 274 0
+ 587 0026 0024     		movs	r4, #0
+ 588              		.loc 1 279 0
+ 589 0028 41F8183D 		str	r3, [r1, #-24]!
+ 280:src/hal/itg3200.c ****   	I2C_Init(I2C1, &I2C_InitStructure);
+ 590              		.loc 1 280 0
+ 591 002c 1F48     		ldr	r0, .L45
+ 592 002e 6946     		mov	r1, sp
+ 274:src/hal/itg3200.c ****   	I2C_InitStructure.I2C_Mode = I2C_Mode_I2C;
+ 593              		.loc 1 274 0
+ 594 0030 ADF80440 		strh	r4, [sp, #4]	@ movhi
+ 277:src/hal/itg3200.c ****   	I2C_InitStructure.I2C_Ack = I2C_Ack_Disable;
+ 595              		.loc 1 277 0
+ 596 0034 ADF80A40 		strh	r4, [sp, #10]	@ movhi
+ 597              		.loc 1 280 0
+ 598 0038 FFF7FEFF 		bl	I2C_Init
+ 281:src/hal/itg3200.c **** 	I2C_ITConfig(I2C1, I2C_IT_EVT | I2C_IT_BUF, ENABLE);
+ 599              		.loc 1 281 0
+ 600 003c 0122     		movs	r2, #1
+ 601 003e 1B48     		ldr	r0, .L45
+ 602 0040 4FF4C061 		mov	r1, #1536
+ 603 0044 FFF7FEFF 		bl	I2C_ITConfig
+ 282:src/hal/itg3200.c **** 
+ 283:src/hal/itg3200.c **** 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6 | GPIO_Pin_7;
+ 604              		.loc 1 283 0
+ 605 0048 C023     		movs	r3, #192
+ 284:src/hal/itg3200.c **** 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+ 285:src/hal/itg3200.c ****   	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
+ 286:src/hal/itg3200.c ****   	GPIO_Init(GPIOB, &GPIO_InitStructure);
+ 606              		.loc 1 286 0
+ 607 004a 05A9     		add	r1, sp, #20
+ 283:src/hal/itg3200.c **** 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6 | GPIO_Pin_7;
+ 608              		.loc 1 283 0
+ 609 004c ADF81430 		strh	r3, [sp, #20]	@ movhi
+ 284:src/hal/itg3200.c **** 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+ 610              		.loc 1 284 0
+ 611 0050 0326     		movs	r6, #3
+ 285:src/hal/itg3200.c ****   	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
+ 612              		.loc 1 285 0
+ 613 0052 1C23     		movs	r3, #28
+ 614              		.loc 1 286 0
+ 615 0054 1748     		ldr	r0, .L45+8
+ 285:src/hal/itg3200.c ****   	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
+ 616              		.loc 1 285 0
+ 617 0056 8DF81730 		strb	r3, [sp, #23]
+ 284:src/hal/itg3200.c **** 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+ 618              		.loc 1 284 0
+ 619 005a 8DF81660 		strb	r6, [sp, #22]
+ 620              		.loc 1 286 0
+ 621 005e FFF7FEFF 		bl	GPIO_Init
+ 287:src/hal/itg3200.c **** 
+ 288:src/hal/itg3200.c ****     NVIC_InitStructure.NVIC_IRQChannel = I2C1_EV_IRQn;
+ 622              		.loc 1 288 0
+ 623 0062 1F23     		movs	r3, #31
+ 624 0064 8DF81030 		strb	r3, [sp, #16]
+ 289:src/hal/itg3200.c ****  	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 3;
+ 290:src/hal/itg3200.c ****   	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+ 291:src/hal/itg3200.c ****   	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+ 292:src/hal/itg3200.c ****   	NVIC_Init(&NVIC_InitStructure);
+ 625              		.loc 1 292 0
+ 626 0068 04A8     		add	r0, sp, #16
+ 291:src/hal/itg3200.c ****   	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+ 627              		.loc 1 291 0
+ 628 006a 1E3B     		subs	r3, r3, #30
+ 629 006c 8DF81330 		strb	r3, [sp, #19]
+ 289:src/hal/itg3200.c ****  	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 3;
+ 630              		.loc 1 289 0
+ 631 0070 8DF81160 		strb	r6, [sp, #17]
+ 290:src/hal/itg3200.c ****   	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+ 632              		.loc 1 290 0
+ 633 0074 8DF81240 		strb	r4, [sp, #18]
+ 634              		.loc 1 292 0
+ 635 0078 FFF7FEFF 		bl	NVIC_Init
+ 293:src/hal/itg3200.c **** 
+ 294:src/hal/itg3200.c **** 
+ 295:src/hal/itg3200.c **** 	ITG_Write(PWR_MGM, 0x80);
+ 636              		.loc 1 295 0
+ 637 007c 3E20     		movs	r0, #62
+ 638 007e 8021     		movs	r1, #128
+ 639 0080 FFF7FEFF 		bl	ITG_Write
+ 640              	.LVL12:
+ 296:src/hal/itg3200.c **** 	for(i = 0;i<9999;i++);
+ 297:src/hal/itg3200.c **** 	ITG_Write(SMPLRT_DIV, 0x00);
+ 641              		.loc 1 297 0
+ 642 0084 1520     		movs	r0, #21
+ 643 0086 2146     		mov	r1, r4
+ 644 0088 FFF7FEFF 		bl	ITG_Write
+ 298:src/hal/itg3200.c **** 	for(i = 0;i<9999;i++);
+ 299:src/hal/itg3200.c **** 	ITG_Write(DLPF_FS, 0x1E);
+ 645              		.loc 1 299 0
+ 646 008c 1620     		movs	r0, #22
+ 647 008e 1E21     		movs	r1, #30
+ 648 0090 FFF7FEFF 		bl	ITG_Write
+ 300:src/hal/itg3200.c **** 	for(i = 0;i<9999;i++);
+ 301:src/hal/itg3200.c **** 	ITG_Write(INT_CFG, 0x00);
+ 649              		.loc 1 301 0
+ 650 0094 1720     		movs	r0, #23
+ 651 0096 2146     		mov	r1, r4
+ 652 0098 FFF7FEFF 		bl	ITG_Write
+ 302:src/hal/itg3200.c **** 	for(i = 0;i<9999;i++);
+ 303:src/hal/itg3200.c **** 	ITG_Write(PWR_MGM, 0x00);
+ 653              		.loc 1 303 0
+ 654 009c 3E20     		movs	r0, #62
+ 655 009e 2146     		mov	r1, r4
+ 274:src/hal/itg3200.c ****   	I2C_InitStructure.I2C_Mode = I2C_Mode_I2C;
+ 656              		.loc 1 274 0
+ 657 00a0 2546     		mov	r5, r4	@ movhi
+ 658              		.loc 1 303 0
+ 659 00a2 FFF7FEFF 		bl	ITG_Write
+ 304:src/hal/itg3200.c **** 	for(i = 0;i<9999;i++);
+ 305:src/hal/itg3200.c **** }
+ 660              		.loc 1 305 0
+ 661 00a6 06B0     		add	sp, sp, #24
+ 662 00a8 70BD     		pop	{r4, r5, r6, pc}
+ 663              	.L46:
+ 664 00aa 00BF     		.align	2
+ 665              	.L45:
+ 666 00ac 00540040 		.word	1073763328
+ 667 00b0 A0860100 		.word	100000
+ 668 00b4 000C0140 		.word	1073810432
+ 669              		.cfi_endproc
+ 670              	.LFE37:
+ 672              		.global	ITG3200_REGISTER
+ 673              		.global	ITG3200_TX_DATA
+ 674              		.global	ITG3200_RX_DATA
+ 675              		.global	ITG3200_BLOCKED
+ 676              		.global	TX_ID
+ 677              		.global	RX_ID
+ 678              		.comm	ITG3200_DIR,1,1
+ 679              		.comm	gyro_offset,4,4
+ 680              		.section	.bss.ITG3200_RX_DATA,"aw",%nobits
+ 681              		.set	.LANCHOR3,. + 0
+ 684              	ITG3200_RX_DATA:
+ 685 0000 00       		.space	1
+ 686              		.section	.bss.ITG3200_REGISTER,"aw",%nobits
+ 687              		.set	.LANCHOR0,. + 0
+ 690              	ITG3200_REGISTER:
+ 691 0000 00       		.space	1
+ 692              		.section	.bss.RX_ID,"aw",%nobits
+ 695              	RX_ID:
+ 696 0000 00       		.space	1
+ 697              		.section	.bss.ITG3200_TX_DATA,"aw",%nobits
+ 698              		.set	.LANCHOR1,. + 0
+ 701              	ITG3200_TX_DATA:
+ 702 0000 00       		.space	1
+ 703              		.section	.bss.TX_ID,"aw",%nobits
+ 706              	TX_ID:
+ 707 0000 00       		.space	1
+ 708              		.section	.bss.ITG3200_BLOCKED,"aw",%nobits
+ 709              		.set	.LANCHOR2,. + 0
+ 712              	ITG3200_BLOCKED:
+ 713 0000 00       		.space	1
+ 714              		.text
+ 715              	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 itg3200.c
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:24     .text.I2C1_EV_IRQHandler:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:29     .text.I2C1_EV_IRQHandler:00000000 I2C1_EV_IRQHandler
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:159    .text.I2C1_EV_IRQHandler:000000b4 $d
+                            *COM*:00000001 ITG3200_DIR
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:171    .text.I2C2_ER_IRQHandler:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:176    .text.I2C2_ER_IRQHandler:00000000 I2C2_ER_IRQHandler
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:204    .text.I2C2_ER_IRQHandler:0000001c $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:210    .text.ITG_Write:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:215    .text.ITG_Write:00000000 ITG_Write
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:265    .text.ITG_Write:00000028 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:274    .text.ITG_Read:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:279    .text.ITG_Read:00000000 ITG_Read
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:324    .text.ITG_Read:00000028 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:333    .text.ITG_IsBlocked:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:338    .text.ITG_IsBlocked:00000000 ITG_IsBlocked
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:353    .text.ITG_IsBlocked:00000008 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:361    .text.ITG_GetRate:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:366    .text.ITG_GetRate:00000000 ITG_GetRate
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:452    .text.ITG_GetRate:00000084 $d
+                            *COM*:00000004 gyro_offset
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:460    .text.ITG_GetRAD:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:465    .text.ITG_GetRAD:00000000 ITG_GetRAD
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:515    .text.ITG_GetRAD:00000058 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:521    .text.ITG_RefOffset:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:526    .text.ITG_RefOffset:00000000 ITG_RefOffset
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:542    .text.ITG_RefOffset:00000008 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:547    .text.ITG_I2C_Setup:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:552    .text.ITG_I2C_Setup:00000000 ITG_I2C_Setup
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:666    .text.ITG_I2C_Setup:000000ac $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:690    .bss.ITG3200_REGISTER:00000000 ITG3200_REGISTER
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:701    .bss.ITG3200_TX_DATA:00000000 ITG3200_TX_DATA
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:684    .bss.ITG3200_RX_DATA:00000000 ITG3200_RX_DATA
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:712    .bss.ITG3200_BLOCKED:00000000 ITG3200_BLOCKED
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:706    .bss.TX_ID:00000000 TX_ID
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:695    .bss.RX_ID:00000000 RX_ID
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:685    .bss.ITG3200_RX_DATA:00000000 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:691    .bss.ITG3200_REGISTER:00000000 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:696    .bss.RX_ID:00000000 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:702    .bss.ITG3200_TX_DATA:00000000 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:707    .bss.TX_ID:00000000 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccXnFZdK.s:713    .bss.ITG3200_BLOCKED:00000000 $d
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+I2C_GetLastEvent
+I2C_Send7bitAddress
+I2C_SendData
+I2C_GenerateSTOP
+I2C_GenerateSTART
+I2C_ReceiveData
+I2C_GetITStatus
+I2C_ClearITPendingBit
+__aeabi_i2f
+__aeabi_fadd
+__aeabi_f2iz
+__aeabi_i2d
+__aeabi_dmul
+__aeabi_d2f
+I2C_Cmd
+I2C_Init
+I2C_ITConfig
+GPIO_Init
+NVIC_Init
