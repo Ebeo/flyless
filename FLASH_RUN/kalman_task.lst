@@ -1,0 +1,197 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 18, 4
+  12              		.thumb
+  13              		.file	"kalman_task.c"
+  21              	.Ltext0:
+  22              		.cfi_sections	.debug_frame
+  23              		.section	.text.KALMAN_Task,"ax",%progbits
+  24              		.align	1
+  25              		.global	KALMAN_Task
+  26              		.thumb
+  27              		.thumb_func
+  29              	KALMAN_Task:
+  30              	.LFB30:
+  31              		.file 1 "src/system/kalman_task.c"
+   1:src/system/kalman_task.c **** /*
+   2:src/system/kalman_task.c **** 	FLYLess
+   3:src/system/kalman_task.c **** 	flyless.wikidot.com
+   4:src/system/kalman_task.c **** 	contact: <m.bubestinger@gmail.com>
+   5:src/system/kalman_task.c **** 
+   6:src/system/kalman_task.c **** 
+   7:src/system/kalman_task.c ****   	This file is part of FLYless.
+   8:src/system/kalman_task.c **** 
+   9:src/system/kalman_task.c ****     FLYLess is free software: you can redistribute it and/or modify
+  10:src/system/kalman_task.c ****     it under the terms of the GNU General Public License as published by
+  11:src/system/kalman_task.c ****     the Free Software Foundation, either version 3 of the License, or
+  12:src/system/kalman_task.c ****     (at your option) any later version.
+  13:src/system/kalman_task.c **** 
+  14:src/system/kalman_task.c ****     FLYLess is distributed in the hope that it will be useful,
+  15:src/system/kalman_task.c ****     but WITHOUT ANY WARRANTY; without even the implied warranty of
+  16:src/system/kalman_task.c ****     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  17:src/system/kalman_task.c ****     GNU General Public License for more details.
+  18:src/system/kalman_task.c **** 
+  19:src/system/kalman_task.c ****     You should have received a copy of the GNU General Public License
+  20:src/system/kalman_task.c ****     along with FLYLess.  If not, see <http://www.gnu.org/licenses/>.
+  21:src/system/kalman_task.c **** */
+  22:src/system/kalman_task.c **** 
+  23:src/system/kalman_task.c **** 
+  24:src/system/kalman_task.c **** #include "FreeRTOS.h"
+  25:src/system/kalman_task.c **** #include "task.h"
+  26:src/system/kalman_task.c **** 
+  27:src/system/kalman_task.c **** #include "stm32f10x.h"
+  28:src/system/kalman_task.c **** #include "stm32f10x_gpio.h"
+  29:src/system/kalman_task.c **** #include "stm32f10x_rcc.h"
+  30:src/system/kalman_task.c **** 
+  31:src/system/kalman_task.c **** #include "global_data.h"
+  32:src/system/kalman_task.c **** 
+  33:src/system/kalman_task.c **** #include "itg3200.h"
+  34:src/system/kalman_task.c **** #include "adxl345.h"
+  35:src/system/kalman_task.c **** 
+  36:src/system/kalman_task.c **** 
+  37:src/system/kalman_task.c **** #include "attitude_observer.h"
+  38:src/system/kalman_task.c **** #include "mav_vect.h"
+  39:src/system/kalman_task.c **** 
+  40:src/system/kalman_task.c **** 
+  41:src/system/kalman_task.c **** #define DELAY			( 5 / portTICK_RATE_MS)
+  42:src/system/kalman_task.c **** 
+  43:src/system/kalman_task.c **** 
+  44:src/system/kalman_task.c **** void KALMAN_Task( void *pvParameters )
+  45:src/system/kalman_task.c **** {
+  32              		.loc 1 45 0
+  33              		.cfi_startproc
+  34              		@ args = 0, pretend = 0, frame = 24
+  35              		@ frame_needed = 0, uses_anonymous_args = 0
+  36              	.LVL0:
+  37 0000 10B5     		push	{r4, lr}
+  38              	.LCFI0:
+  39              		.cfi_def_cfa_offset 8
+  46:src/system/kalman_task.c **** 
+  47:src/system/kalman_task.c **** 
+  48:src/system/kalman_task.c ****     float_vect3 init_state_accel;
+  49:src/system/kalman_task.c ****   	float_vect3 init_state_mag;
+  50:src/system/kalman_task.c **** 
+  51:src/system/kalman_task.c ****   	init_state_accel.x = 0;
+  40              		.loc 1 51 0
+  41 0002 0023     		movs	r3, #0
+  45:src/system/kalman_task.c **** {
+  42              		.loc 1 45 0
+  43 0004 88B0     		sub	sp, sp, #32
+  44              	.LCFI1:
+  45              		.cfi_def_cfa_offset 40
+  46              		.loc 1 51 0
+  47 0006 0593     		str	r3, [sp, #20]	@ float
+  52:src/system/kalman_task.c ****   	init_state_accel.y = 0;
+  48              		.loc 1 52 0
+  49 0008 0693     		str	r3, [sp, #24]	@ float
+  53:src/system/kalman_task.c ****   	init_state_accel.z = 0;
+  50              		.loc 1 53 0
+  51 000a 0793     		str	r3, [sp, #28]	@ float
+  54:src/system/kalman_task.c **** 
+  55:src/system/kalman_task.c ****   	init_state_mag.x = 1;
+  52              		.loc 1 55 0
+  53 000c 4FF07E53 		mov	r3, #1065353216
+  56:src/system/kalman_task.c ****   	init_state_mag.y = 1;
+  54              		.loc 1 56 0
+  55 0010 0393     		str	r3, [sp, #12]	@ float
+  57:src/system/kalman_task.c ****   	init_state_mag.z = 1;
+  56              		.loc 1 57 0
+  57 0012 0493     		str	r3, [sp, #16]	@ float
+  55:src/system/kalman_task.c ****   	init_state_mag.x = 1;
+  58              		.loc 1 55 0
+  59 0014 0293     		str	r3, [sp, #8]	@ float
+  58:src/system/kalman_task.c **** 
+  59:src/system/kalman_task.c ****   	attitude_observer_init(init_state_accel, init_state_mag);
+  60              		.loc 1 59 0
+  61 0016 03AB     		add	r3, sp, #12
+  62 0018 93E80300 		ldmia	r3, {r0, r1}
+  63              	.LVL1:
+  64 001c 6B46     		mov	r3, sp
+  65 001e 83E80300 		stmia	r3, {r0, r1}
+  66 0022 05AA     		add	r2, sp, #20
+  67 0024 4FF07E53 		mov	r3, #1065353216
+  68 0028 07CA     		ldmia	r2, {r0, r1, r2}
+  69              		.cfi_offset 14, -4
+  70              		.cfi_offset 4, -8
+  71 002a FFF7FEFF 		bl	attitude_observer_init
+  72              	.L2:
+  60:src/system/kalman_task.c **** 
+  61:src/system/kalman_task.c **** 	while(1)
+  62:src/system/kalman_task.c **** 	{
+  63:src/system/kalman_task.c **** 		vTaskDelay(DELAY);
+  64:src/system/kalman_task.c **** 
+  65:src/system/kalman_task.c **** 
+  66:src/system/kalman_task.c **** 		ITG_GetRate(&global_data.gyro_raw);
+  67:src/system/kalman_task.c **** 		ITG_GetRAD(global_data.gyro_raw,&global_data.gyro_rad);
+  73              		.loc 1 67 0 discriminator 1
+  74 002e 124C     		ldr	r4, .L3
+  63:src/system/kalman_task.c **** 		vTaskDelay(DELAY);
+  75              		.loc 1 63 0 discriminator 1
+  76 0030 0520     		movs	r0, #5
+  77 0032 FFF7FEFF 		bl	vTaskDelay
+  66:src/system/kalman_task.c **** 		ITG_GetRate(&global_data.gyro_raw);
+  78              		.loc 1 66 0 discriminator 1
+  79 0036 1148     		ldr	r0, .L3+4
+  80 0038 FFF7FEFF 		bl	ITG_GetRate
+  81              		.loc 1 67 0 discriminator 1
+  82 003c 04F12C03 		add	r3, r4, #44
+  83 0040 93E80300 		ldmia	r3, {r0, r1}
+  84 0044 04F13402 		add	r2, r4, #52
+  85 0048 FFF7FEFF 		bl	ITG_GetRAD
+  68:src/system/kalman_task.c **** 		ADXL_GetACC(&global_data.acc_raw);
+  86              		.loc 1 68 0 discriminator 1
+  87 004c 04F11A00 		add	r0, r4, #26
+  88 0050 FFF7FEFF 		bl	ADXL_GetACC
+  69:src/system/kalman_task.c **** 
+  70:src/system/kalman_task.c **** 		attitude_observer_predict(global_data.gyro_rad);
+  89              		.loc 1 70 0 discriminator 1
+  90 0054 04F13403 		add	r3, r4, #52
+  91 0058 93E80700 		ldmia	r3, {r0, r1, r2}
+  92 005c FFF7FEFF 		bl	attitude_observer_predict
+  71:src/system/kalman_task.c **** 		attitude_observer_correct_accel(global_data.acc_raw);
+  93              		.loc 1 71 0 discriminator 1
+  94 0060 638B     		ldrh	r3, [r4, #26]
+  95 0062 A08B     		ldrh	r0, [r4, #28]
+  96 0064 E18B     		ldrh	r1, [r4, #30]
+  97 0066 43EA0040 		orr	r0, r3, r0, lsl #16
+  98 006a FFF7FEFF 		bl	attitude_observer_correct_accel
+  72:src/system/kalman_task.c **** 		attitude_observer_get_angles(&global_data.attitude);
+  99              		.loc 1 72 0 discriminator 1
+ 100 006e 201D     		adds	r0, r4, #4
+ 101 0070 FFF7FEFF 		bl	attitude_observer_get_angles
+ 102 0074 DBE7     		b	.L2
+ 103              	.L4:
+ 104 0076 00BF     		.align	2
+ 105              	.L3:
+ 106 0078 00000000 		.word	global_data
+ 107 007c 2C000000 		.word	global_data+44
+ 108              		.cfi_endproc
+ 109              	.LFE30:
+ 111              		.comm	global_data,104,4
+ 112              		.text
+ 113              	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 kalman_task.c
+C:\Users\MICHAE~1\AppData\Local\Temp\ccQXAuef.s:24     .text.KALMAN_Task:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccQXAuef.s:29     .text.KALMAN_Task:00000000 KALMAN_Task
+C:\Users\MICHAE~1\AppData\Local\Temp\ccQXAuef.s:106    .text.KALMAN_Task:00000078 $d
+                            *COM*:00000068 global_data
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+attitude_observer_init
+vTaskDelay
+ITG_GetRate
+ITG_GetRAD
+ADXL_GetACC
+attitude_observer_predict
+attitude_observer_correct_accel
+attitude_observer_get_angles

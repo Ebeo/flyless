@@ -1,0 +1,828 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 18, 4
+  12              		.thumb
+  13              		.file	"attitude_observer.c"
+  21              	.Ltext0:
+  22              		.cfi_sections	.debug_frame
+  23              		.global	__aeabi_fcmpge
+  24              		.global	__aeabi_fadd
+  25              		.global	__aeabi_fsub
+  26              		.global	__aeabi_fdiv
+  27              		.global	__aeabi_fmul
+  28              		.global	__aeabi_fcmplt
+  29              		.section	.text.fast_atan2,"ax",%progbits
+  30              		.align	1
+  31              		.thumb
+  32              		.thumb_func
+  34              	fast_atan2:
+  35              	.LFB1:
+  36              		.file 1 "src/pixhawk/fast_atan2.h"
+   1:src/pixhawk/fast_atan2.h **** /*======================================================================
+   2:src/pixhawk/fast_atan2.h **** 
+   3:src/pixhawk/fast_atan2.h ****  PIXHAWK mavlib - The Micro Air Vehicle Platform Library
+   4:src/pixhawk/fast_atan2.h ****  Please see our website at <http://pixhawk.ethz.ch>
+   5:src/pixhawk/fast_atan2.h **** 
+   6:src/pixhawk/fast_atan2.h **** 
+   7:src/pixhawk/fast_atan2.h ****  Original Authors:
+   8:src/pixhawk/fast_atan2.h **** 
+   9:src/pixhawk/fast_atan2.h ****  Contributing Authors (in alphabetical order):
+  10:src/pixhawk/fast_atan2.h ****  Joseph Kruijen, jkruijen@student.ethz.ch
+  11:src/pixhawk/fast_atan2.h **** 
+  12:src/pixhawk/fast_atan2.h **** 
+  13:src/pixhawk/fast_atan2.h **** 
+  14:src/pixhawk/fast_atan2.h **** 
+  15:src/pixhawk/fast_atan2.h ****  (c) 2008, 2009 PIXHAWK PROJECT
+  16:src/pixhawk/fast_atan2.h **** 
+  17:src/pixhawk/fast_atan2.h ****  This file is part of the PIXHAWK project
+  18:src/pixhawk/fast_atan2.h **** 
+  19:src/pixhawk/fast_atan2.h ****  mavlib is free software: you can redistribute it and/or modify
+  20:src/pixhawk/fast_atan2.h ****  it under the terms of the GNU General Public License as published by
+  21:src/pixhawk/fast_atan2.h ****  the Free Software Foundation, either version 3 of the License, or
+  22:src/pixhawk/fast_atan2.h ****  (at your option) any later version.
+  23:src/pixhawk/fast_atan2.h **** 
+  24:src/pixhawk/fast_atan2.h ****  mavlib is distributed in the hope that it will be useful,
+  25:src/pixhawk/fast_atan2.h ****  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  26:src/pixhawk/fast_atan2.h ****  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  27:src/pixhawk/fast_atan2.h ****  GNU General Public License for more details.
+  28:src/pixhawk/fast_atan2.h **** 
+  29:src/pixhawk/fast_atan2.h ****  You should have received a copy of the GNU General Public License
+  30:src/pixhawk/fast_atan2.h ****  along with mavlib. If not, see <http://www.gnu.org/licenses/>.
+  31:src/pixhawk/fast_atan2.h **** 
+  32:src/pixhawk/fast_atan2.h ****  ========================================================================*/
+  33:src/pixhawk/fast_atan2.h **** #ifndef _FAST_ATAN2_H_
+  34:src/pixhawk/fast_atan2.h **** #define _FAST_ATAN2_H_
+  35:src/pixhawk/fast_atan2.h **** 
+  36:src/pixhawk/fast_atan2.h **** #include "inttypes.h"
+  37:src/pixhawk/fast_atan2.h **** #include "math.h"
+  38:src/pixhawk/fast_atan2.h **** 
+  39:src/pixhawk/fast_atan2.h **** #ifdef __cplusplus
+  40:src/pixhawk/fast_atan2.h **** extern "C"
+  41:src/pixhawk/fast_atan2.h **** {
+  42:src/pixhawk/fast_atan2.h **** #endif
+  43:src/pixhawk/fast_atan2.h **** 
+  44:src/pixhawk/fast_atan2.h **** #define PI  3.1415926535897932384626433832795029
+  45:src/pixhawk/fast_atan2.h **** 
+  46:src/pixhawk/fast_atan2.h **** /** @brief Fast @c abs(x)
+  47:src/pixhawk/fast_atan2.h ****  ** @param x argument.
+  48:src/pixhawk/fast_atan2.h ****  ** @return @c abs(x)
+  49:src/pixhawk/fast_atan2.h ****  **/
+  50:src/pixhawk/fast_atan2.h **** static inline float fast_abs(float x)
+  51:src/pixhawk/fast_atan2.h **** {
+  52:src/pixhawk/fast_atan2.h **** 	return (x >= 0) ? x : -x;
+  53:src/pixhawk/fast_atan2.h **** }
+  54:src/pixhawk/fast_atan2.h **** 
+  55:src/pixhawk/fast_atan2.h **** /** @brief Fast @c atan2
+  56:src/pixhawk/fast_atan2.h ****  ** @param x argument.
+  57:src/pixhawk/fast_atan2.h ****  ** @param y argument.
+  58:src/pixhawk/fast_atan2.h ****  ** @return Approximation of @c atan2(x).
+  59:src/pixhawk/fast_atan2.h ****  **/
+  60:src/pixhawk/fast_atan2.h **** static inline float fast_atan2(float y, float x)
+  61:src/pixhawk/fast_atan2.h **** {
+  37              		.loc 1 61 0
+  38              		.cfi_startproc
+  39              		@ args = 0, pretend = 0, frame = 0
+  40              		@ frame_needed = 0, uses_anonymous_args = 0
+  41              	.LVL0:
+  42 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+  43              	.LCFI0:
+  44              		.cfi_def_cfa_offset 24
+  45              		.loc 1 61 0
+  46 0002 0C46     		mov	r4, r1
+  47              		.cfi_offset 14, -4
+  48              		.cfi_offset 7, -8
+  49              		.cfi_offset 6, -12
+  50              		.cfi_offset 5, -16
+  51              		.cfi_offset 4, -20
+  52              		.cfi_offset 3, -24
+  53              	.LBB4:
+  54              	.LBB5:
+  52:src/pixhawk/fast_atan2.h **** 	return (x >= 0) ? x : -x;
+  55              		.loc 1 52 0
+  56 0004 0021     		movs	r1, #0
+  57              	.LVL1:
+  58              	.LBE5:
+  59              	.LBE4:
+  60              		.loc 1 61 0
+  61 0006 0646     		mov	r6, r0
+  62              	.LVL2:
+  63              	.LBB7:
+  64              	.LBB6:
+  52:src/pixhawk/fast_atan2.h **** 	return (x >= 0) ? x : -x;
+  65              		.loc 1 52 0
+  66 0008 FFF7FEFF 		bl	__aeabi_fcmpge
+  67              	.LVL3:
+  68 000c 10B9     		cbnz	r0, .L8
+  69 000e 06F10040 		add	r0, r6, #-2147483648
+  70 0012 00E0     		b	.L2
+  71              	.L8:
+  72 0014 3046     		mov	r0, r6
+  73              	.L2:
+  74              	.LBE6:
+  75              	.LBE7:
+  62:src/pixhawk/fast_atan2.h **** 
+  63:src/pixhawk/fast_atan2.h **** 	/*
+  64:src/pixhawk/fast_atan2.h **** 	 The function f(r)=atan((1-r)/(1+r)) for r in [-1,1] is easier to
+  65:src/pixhawk/fast_atan2.h **** 	 approximate than atan(z) for z in [0,inf]. To approximate f(r) to
+  66:src/pixhawk/fast_atan2.h **** 	 the third degree we may solve the system
+  67:src/pixhawk/fast_atan2.h **** 
+  68:src/pixhawk/fast_atan2.h **** 	 f(+1) = c0 + c1 + c2 + c3 = atan(0) = 0
+  69:src/pixhawk/fast_atan2.h **** 	 f(-1) = c0 - c1 + c2 - c3 = atan(inf) = pi/2
+  70:src/pixhawk/fast_atan2.h **** 	 f(0)  = c0                = atan(1) = pi/4
+  71:src/pixhawk/fast_atan2.h **** 
+  72:src/pixhawk/fast_atan2.h **** 	 which constrains the polynomial to go through the end points and
+  73:src/pixhawk/fast_atan2.h **** 	 the middle point.
+  74:src/pixhawk/fast_atan2.h **** 
+  75:src/pixhawk/fast_atan2.h **** 	 We still miss a constrain, which might be simply a constarint on
+  76:src/pixhawk/fast_atan2.h **** 	 the derivative in 0. Instead we minimize the Linf error in the
+  77:src/pixhawk/fast_atan2.h **** 	 range [0,1] by searching for an optimal value of the free
+  78:src/pixhawk/fast_atan2.h **** 	 parameter. This turns out to correspond to the solution
+  79:src/pixhawk/fast_atan2.h **** 
+  80:src/pixhawk/fast_atan2.h **** 	 c0=pi/4, c1=-0.9675, c2=0, c3=0.1821
+  81:src/pixhawk/fast_atan2.h **** 
+  82:src/pixhawk/fast_atan2.h **** 	 which has maxerr = 0.0061 rad = 0.35 grad.
+  83:src/pixhawk/fast_atan2.h **** 	 */
+  84:src/pixhawk/fast_atan2.h **** 
+  85:src/pixhawk/fast_atan2.h **** 	float angle, r;
+  86:src/pixhawk/fast_atan2.h **** 	const float c3 = 0.1821;
+  87:src/pixhawk/fast_atan2.h **** 	const float c1 = 0.9675;
+  88:src/pixhawk/fast_atan2.h **** 	float abs_y = fast_abs(y) + (float) (1e-10);
+  76              		.loc 1 88 0
+  77 0016 2149     		ldr	r1, .L12
+  78 0018 FFF7FEFF 		bl	__aeabi_fadd
+  89:src/pixhawk/fast_atan2.h **** 
+  90:src/pixhawk/fast_atan2.h **** 	if (x >= 0)
+  79              		.loc 1 90 0
+  80 001c 0021     		movs	r1, #0
+  88:src/pixhawk/fast_atan2.h **** 	float abs_y = fast_abs(y) + (float) (1e-10);
+  81              		.loc 1 88 0
+  82 001e 0546     		mov	r5, r0
+  83              	.LVL4:
+  84              		.loc 1 90 0
+  85 0020 2046     		mov	r0, r4
+  86              	.LVL5:
+  87 0022 FFF7FEFF 		bl	__aeabi_fcmpge
+  88 0026 78B1     		cbz	r0, .L11
+  91:src/pixhawk/fast_atan2.h **** 	{
+  92:src/pixhawk/fast_atan2.h **** 		r = (x - abs_y) / (x + abs_y);
+  89              		.loc 1 92 0
+  90 0028 2946     		mov	r1, r5
+  91 002a 2046     		mov	r0, r4
+  92 002c FFF7FEFF 		bl	__aeabi_fsub
+  93 0030 2946     		mov	r1, r5
+  94 0032 0746     		mov	r7, r0
+  95 0034 2046     		mov	r0, r4
+  96 0036 FFF7FEFF 		bl	__aeabi_fadd
+  97 003a 0146     		mov	r1, r0
+  98 003c 3846     		mov	r0, r7
+  99 003e FFF7FEFF 		bl	__aeabi_fdiv
+  93:src/pixhawk/fast_atan2.h **** 		angle = (float) (PI / 4.0);
+ 100              		.loc 1 93 0
+ 101 0042 174D     		ldr	r5, .L12+4
+ 102              	.LVL6:
+  92:src/pixhawk/fast_atan2.h **** 		r = (x - abs_y) / (x + abs_y);
+ 103              		.loc 1 92 0
+ 104 0044 0446     		mov	r4, r0
+ 105              	.LVL7:
+ 106 0046 0EE0     		b	.L5
+ 107              	.LVL8:
+ 108              	.L11:
+  94:src/pixhawk/fast_atan2.h **** 	}
+  95:src/pixhawk/fast_atan2.h **** 	else
+  96:src/pixhawk/fast_atan2.h **** 	{
+  97:src/pixhawk/fast_atan2.h **** 		r = (x + abs_y) / (abs_y - x);
+ 109              		.loc 1 97 0
+ 110 0048 2946     		mov	r1, r5
+ 111 004a 2046     		mov	r0, r4
+ 112 004c FFF7FEFF 		bl	__aeabi_fadd
+ 113 0050 2146     		mov	r1, r4
+ 114 0052 0746     		mov	r7, r0
+ 115 0054 2846     		mov	r0, r5
+ 116 0056 FFF7FEFF 		bl	__aeabi_fsub
+ 117 005a 0146     		mov	r1, r0
+ 118 005c 3846     		mov	r0, r7
+ 119 005e FFF7FEFF 		bl	__aeabi_fdiv
+  98:src/pixhawk/fast_atan2.h **** 		angle = (float) (3 * PI / 4.0);
+ 120              		.loc 1 98 0
+ 121 0062 104D     		ldr	r5, .L12+8
+ 122              	.LVL9:
+  97:src/pixhawk/fast_atan2.h **** 		r = (x + abs_y) / (abs_y - x);
+ 123              		.loc 1 97 0
+ 124 0064 0446     		mov	r4, r0
+ 125              	.LVL10:
+ 126              	.L5:
+  99:src/pixhawk/fast_atan2.h **** 	}
+ 100:src/pixhawk/fast_atan2.h **** 	angle += (c3 * r * r - c1) * r;
+ 127              		.loc 1 100 0
+ 128 0066 2046     		mov	r0, r4
+ 129              	.LVL11:
+ 130 0068 0F49     		ldr	r1, .L12+12
+ 131 006a FFF7FEFF 		bl	__aeabi_fmul
+ 132 006e 2146     		mov	r1, r4
+ 133 0070 FFF7FEFF 		bl	__aeabi_fmul
+ 134 0074 0D49     		ldr	r1, .L12+16
+ 135 0076 FFF7FEFF 		bl	__aeabi_fsub
+ 136 007a 2146     		mov	r1, r4
+ 137 007c FFF7FEFF 		bl	__aeabi_fmul
+ 138 0080 0146     		mov	r1, r0
+ 139 0082 2846     		mov	r0, r5
+ 140 0084 FFF7FEFF 		bl	__aeabi_fadd
+ 101:src/pixhawk/fast_atan2.h **** 	return (y < 0) ? -angle : angle;
+ 141              		.loc 1 101 0
+ 142 0088 0021     		movs	r1, #0
+ 100:src/pixhawk/fast_atan2.h **** 	angle += (c3 * r * r - c1) * r;
+ 143              		.loc 1 100 0
+ 144 008a 0446     		mov	r4, r0
+ 145              	.LVL12:
+ 146              		.loc 1 101 0
+ 147 008c 3046     		mov	r0, r6
+ 148              	.LVL13:
+ 149 008e FFF7FEFF 		bl	__aeabi_fcmplt
+ 150 0092 08B1     		cbz	r0, .L6
+ 151              		.loc 1 101 0 is_stmt 0 discriminator 1
+ 152 0094 04F10044 		add	r4, r4, #-2147483648
+ 153              	.LVL14:
+ 154              	.L6:
+ 102:src/pixhawk/fast_atan2.h **** }
+ 155              		.loc 1 102 0 is_stmt 1 discriminator 3
+ 156 0098 2046     		mov	r0, r4
+ 157 009a F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 158              	.L13:
+ 159              		.align	2
+ 160              	.L12:
+ 161 009c FFE6DB2E 		.word	786163455
+ 162 00a0 DB0F493F 		.word	1061752795
+ 163 00a4 E4CB1640 		.word	1075235812
+ 164 00a8 6C783A3E 		.word	1044019308
+ 165 00ac 14AE773F 		.word	1064807956
+ 166              		.cfi_endproc
+ 167              	.LFE1:
+ 169              		.section	.text.attitude_observer_init,"ax",%progbits
+ 170              		.align	1
+ 171              		.global	attitude_observer_init
+ 172              		.thumb
+ 173              		.thumb_func
+ 175              	attitude_observer_init:
+ 176              	.LFB2:
+ 177              		.file 2 "src/pixhawk/attitude_observer.c"
+   1:src/pixhawk/attitude_observer.c **** /*=====================================================================
+   2:src/pixhawk/attitude_observer.c **** 
+   3:src/pixhawk/attitude_observer.c ****  PIXHAWK Micro Air Vehicle Flying Robotics Toolkit
+   4:src/pixhawk/attitude_observer.c **** 
+   5:src/pixhawk/attitude_observer.c ****  (c) 2009, 2010 PIXHAWK PROJECT  <http://pixhawk.ethz.ch>
+   6:src/pixhawk/attitude_observer.c **** 
+   7:src/pixhawk/attitude_observer.c ****  This file is part of the PIXHAWK project
+   8:src/pixhawk/attitude_observer.c **** 
+   9:src/pixhawk/attitude_observer.c ****  PIXHAWK is free software: you can redistribute it and/or modify
+  10:src/pixhawk/attitude_observer.c ****  it under the terms of the GNU General Public License as published by
+  11:src/pixhawk/attitude_observer.c ****  the Free Software Foundation, either version 3 of the License, or
+  12:src/pixhawk/attitude_observer.c ****  (at your option) any later version.
+  13:src/pixhawk/attitude_observer.c **** 
+  14:src/pixhawk/attitude_observer.c ****  PIXHAWK is distributed in the hope that it will be useful,
+  15:src/pixhawk/attitude_observer.c ****  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  16:src/pixhawk/attitude_observer.c ****  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  17:src/pixhawk/attitude_observer.c ****  GNU General Public License for more details.
+  18:src/pixhawk/attitude_observer.c **** 
+  19:src/pixhawk/attitude_observer.c ****  You should have received a copy of the GNU General Public License
+  20:src/pixhawk/attitude_observer.c ****  along with PIXHAWK. If not, see <http://www.gnu.org/licenses/>.
+  21:src/pixhawk/attitude_observer.c **** 
+  22:src/pixhawk/attitude_observer.c ****  ======================================================================*/
+  23:src/pixhawk/attitude_observer.c **** 
+  24:src/pixhawk/attitude_observer.c **** /**
+  25:src/pixhawk/attitude_observer.c ****  * @file
+  26:src/pixhawk/attitude_observer.c ****  *   @brief Attitude Observer Filter
+  27:src/pixhawk/attitude_observer.c ****  *
+  28:src/pixhawk/attitude_observer.c ****  *   @author Martin Rutschmann <pixhawk@student.ethz.ch>
+  29:src/pixhawk/attitude_observer.c ****  *
+  30:src/pixhawk/attitude_observer.c ****  * This Observer Filter, filters the measurement of a vector which is constant in the
+  31:src/pixhawk/attitude_observer.c ****  * World Frame. For prediction it uses the gyroscope measurements and for the correction
+  32:src/pixhawk/attitude_observer.c ****  * the measurement of the vector (accelerometer or magnetometer). It has a constant Kalman
+  33:src/pixhawk/attitude_observer.c ****  * Gain Matrix which can be calculated using MATLAB
+  34:src/pixhawk/attitude_observer.c ****  */
+  35:src/pixhawk/attitude_observer.c **** 
+  36:src/pixhawk/attitude_observer.c **** #include "attitude_observer.h"
+  37:src/pixhawk/attitude_observer.c **** #include "fast_atan2.h"
+  38:src/pixhawk/attitude_observer.c **** #include <math.h>
+  39:src/pixhawk/attitude_observer.c **** #define TS 0.005f
+  40:src/pixhawk/attitude_observer.c **** 
+  41:src/pixhawk/attitude_observer.c **** 
+  42:src/pixhawk/attitude_observer.c **** #define K_MAGNET 0.1f
+  43:src/pixhawk/attitude_observer.c **** 
+  44:src/pixhawk/attitude_observer.c **** static float_vect3 state_accel;
+  45:src/pixhawk/attitude_observer.c **** static float_vect3 state_magnet;
+  46:src/pixhawk/attitude_observer.c **** 
+  47:src/pixhawk/attitude_observer.c **** void attitude_observer_init(float_vect3 init_state_accel,
+  48:src/pixhawk/attitude_observer.c **** 		float_vect3 init_state_magnet)
+  49:src/pixhawk/attitude_observer.c **** {
+ 178              		.loc 2 49 0
+ 179              		.cfi_startproc
+ 180              		@ args = 16, pretend = 8, frame = 16
+ 181              		@ frame_needed = 0, uses_anonymous_args = 0
+ 182 0000 82B0     		sub	sp, sp, #8
+ 183              	.LCFI1:
+ 184              		.cfi_def_cfa_offset 8
+ 185 0002 30B5     		push	{r4, r5, lr}
+ 186              	.LCFI2:
+ 187              		.cfi_def_cfa_offset 20
+ 188 0004 85B0     		sub	sp, sp, #20
+ 189              	.LCFI3:
+ 190              		.cfi_def_cfa_offset 40
+ 191              		.loc 2 49 0
+ 192 0006 01AC     		add	r4, sp, #4
+ 193              		.cfi_offset 14, -12
+ 194              		.cfi_offset 5, -16
+ 195              		.cfi_offset 4, -20
+ 196 0008 84E80700 		stmia	r4, {r0, r1, r2}
+ 197 000c 08AD     		add	r5, sp, #32
+ 198 000e 45F8043F 		str	r3, [r5, #4]!
+  50:src/pixhawk/attitude_observer.c **** 	state_accel = init_state_accel;
+ 199              		.loc 2 50 0
+ 200 0012 074B     		ldr	r3, .L15
+ 201 0014 94E80700 		ldmia	r4, {r0, r1, r2}
+ 202 0018 83E80700 		stmia	r3, {r0, r1, r2}
+  51:src/pixhawk/attitude_observer.c **** 	state_magnet = init_state_magnet;
+ 203              		.loc 2 51 0
+ 204 001c 95E80700 		ldmia	r5, {r0, r1, r2}
+ 205 0020 044B     		ldr	r3, .L15+4
+ 206 0022 83E80700 		stmia	r3, {r0, r1, r2}
+  52:src/pixhawk/attitude_observer.c **** }
+ 207              		.loc 2 52 0
+ 208 0026 05B0     		add	sp, sp, #20
+ 209 0028 BDE83040 		pop	{r4, r5, lr}
+ 210 002c 02B0     		add	sp, sp, #8
+ 211 002e 7047     		bx	lr
+ 212              	.L16:
+ 213              		.align	2
+ 214              	.L15:
+ 215 0030 00000000 		.word	.LANCHOR0
+ 216 0034 00000000 		.word	.LANCHOR1
+ 217              		.cfi_endproc
+ 218              	.LFE2:
+ 220              		.section	.text.attitude_observer_predict,"ax",%progbits
+ 221              		.align	1
+ 222              		.global	attitude_observer_predict
+ 223              		.thumb
+ 224              		.thumb_func
+ 226              	attitude_observer_predict:
+ 227              	.LFB3:
+  53:src/pixhawk/attitude_observer.c **** 
+  54:src/pixhawk/attitude_observer.c **** void attitude_observer_predict(float_vect3 gyros)
+  55:src/pixhawk/attitude_observer.c **** {
+ 228              		.loc 2 55 0
+ 229              		.cfi_startproc
+ 230              		@ args = 0, pretend = 0, frame = 16
+ 231              		@ frame_needed = 0, uses_anonymous_args = 0
+ 232 0000 2DE9F04F 		push	{r4, r5, r6, r7, r8, r9, sl, fp, lr}
+ 233              	.LCFI4:
+ 234              		.cfi_def_cfa_offset 36
+ 235 0004 85B0     		sub	sp, sp, #20
+ 236              	.LCFI5:
+ 237              		.cfi_def_cfa_offset 56
+ 238              		.loc 2 55 0
+ 239 0006 01AB     		add	r3, sp, #4
+ 240 0008 83E80700 		stmia	r3, {r0, r1, r2}
+  56:src/pixhawk/attitude_observer.c **** 	float w1 = TS * gyros.x;
+ 241              		.loc 2 56 0
+ 242 000c 2449     		ldr	r1, .L18
+ 243 000e 0198     		ldr	r0, [sp, #4]	@ float
+ 244              		.cfi_offset 14, -4
+ 245              		.cfi_offset 11, -8
+ 246              		.cfi_offset 10, -12
+ 247              		.cfi_offset 9, -16
+ 248              		.cfi_offset 8, -20
+ 249              		.cfi_offset 7, -24
+ 250              		.cfi_offset 6, -28
+ 251              		.cfi_offset 5, -32
+ 252              		.cfi_offset 4, -36
+ 253 0010 FFF7FEFF 		bl	__aeabi_fmul
+  57:src/pixhawk/attitude_observer.c **** 	float w2 = TS * gyros.y;
+ 254              		.loc 2 57 0
+ 255 0014 2249     		ldr	r1, .L18
+  56:src/pixhawk/attitude_observer.c **** 	float w1 = TS * gyros.x;
+ 256              		.loc 2 56 0
+ 257 0016 8046     		mov	r8, r0
+ 258              	.LVL15:
+ 259              		.loc 2 57 0
+ 260 0018 0298     		ldr	r0, [sp, #8]	@ float
+ 261              	.LVL16:
+ 262 001a FFF7FEFF 		bl	__aeabi_fmul
+  58:src/pixhawk/attitude_observer.c **** 	float w3 = TS * gyros.z;
+ 263              		.loc 2 58 0
+ 264 001e 2049     		ldr	r1, .L18
+  57:src/pixhawk/attitude_observer.c **** 	float w2 = TS * gyros.y;
+ 265              		.loc 2 57 0
+ 266 0020 8146     		mov	r9, r0
+ 267              	.LVL17:
+ 268              		.loc 2 58 0
+ 269 0022 0398     		ldr	r0, [sp, #12]	@ float
+ 270              	.LVL18:
+ 271 0024 FFF7FEFF 		bl	__aeabi_fmul
+  59:src/pixhawk/attitude_observer.c **** 
+  60:src/pixhawk/attitude_observer.c **** 	//Predict accel Vector
+  61:src/pixhawk/attitude_observer.c **** 	float x = state_accel.x + w3 * state_accel.y - w2 * state_accel.z;
+ 272              		.loc 2 61 0
+ 273 0028 1E4C     		ldr	r4, .L18+4
+  58:src/pixhawk/attitude_observer.c **** 	float w3 = TS * gyros.z;
+ 274              		.loc 2 58 0
+ 275 002a 8246     		mov	sl, r0
+ 276              	.LVL19:
+ 277              		.loc 2 61 0
+ 278 002c 6668     		ldr	r6, [r4, #4]	@ float
+ 279 002e 2768     		ldr	r7, [r4, #0]	@ float
+ 280 0030 3146     		mov	r1, r6
+ 281 0032 FFF7FEFF 		bl	__aeabi_fmul
+ 282              	.LVL20:
+ 283 0036 0146     		mov	r1, r0
+ 284 0038 3846     		mov	r0, r7
+ 285 003a FFF7FEFF 		bl	__aeabi_fadd
+ 286 003e A568     		ldr	r5, [r4, #8]	@ float
+ 287              	.LVL21:
+ 288 0040 8346     		mov	fp, r0
+ 289 0042 2946     		mov	r1, r5
+ 290 0044 4846     		mov	r0, r9
+ 291 0046 FFF7FEFF 		bl	__aeabi_fmul
+ 292              	.LVL22:
+ 293 004a 0146     		mov	r1, r0
+ 294 004c 5846     		mov	r0, fp
+ 295 004e FFF7FEFF 		bl	__aeabi_fsub
+  62:src/pixhawk/attitude_observer.c **** 	float y = -w3 * state_accel.x + state_accel.y + w1 * state_accel.z;
+ 296              		.loc 2 62 0
+ 297 0052 3946     		mov	r1, r7
+  63:src/pixhawk/attitude_observer.c **** 	float z = w2 * state_accel.x - w1 * state_accel.y + state_accel.z;
+  64:src/pixhawk/attitude_observer.c **** 	state_accel.x = x;
+ 298              		.loc 2 64 0
+ 299 0054 2060     		str	r0, [r4, #0]	@ float
+  62:src/pixhawk/attitude_observer.c **** 	float y = -w3 * state_accel.x + state_accel.y + w1 * state_accel.z;
+ 300              		.loc 2 62 0
+ 301 0056 0AF10040 		add	r0, sl, #-2147483648
+ 302 005a FFF7FEFF 		bl	__aeabi_fmul
+ 303 005e 3146     		mov	r1, r6
+ 304 0060 FFF7FEFF 		bl	__aeabi_fadd
+ 305 0064 2946     		mov	r1, r5
+ 306 0066 8246     		mov	sl, r0
+ 307              	.LVL23:
+ 308 0068 4046     		mov	r0, r8
+ 309 006a FFF7FEFF 		bl	__aeabi_fmul
+ 310 006e 0146     		mov	r1, r0
+ 311 0070 5046     		mov	r0, sl
+ 312 0072 FFF7FEFF 		bl	__aeabi_fadd
+  63:src/pixhawk/attitude_observer.c **** 	float z = w2 * state_accel.x - w1 * state_accel.y + state_accel.z;
+ 313              		.loc 2 63 0
+ 314 0076 3946     		mov	r1, r7
+  65:src/pixhawk/attitude_observer.c **** 	state_accel.y = y;
+ 315              		.loc 2 65 0
+ 316 0078 6060     		str	r0, [r4, #4]	@ float
+  63:src/pixhawk/attitude_observer.c **** 	float z = w2 * state_accel.x - w1 * state_accel.y + state_accel.z;
+ 317              		.loc 2 63 0
+ 318 007a 4846     		mov	r0, r9
+ 319 007c FFF7FEFF 		bl	__aeabi_fmul
+ 320 0080 3146     		mov	r1, r6
+ 321 0082 0746     		mov	r7, r0
+ 322              	.LVL24:
+ 323 0084 4046     		mov	r0, r8
+ 324 0086 FFF7FEFF 		bl	__aeabi_fmul
+ 325 008a 0146     		mov	r1, r0
+ 326 008c 3846     		mov	r0, r7
+ 327 008e FFF7FEFF 		bl	__aeabi_fsub
+ 328 0092 2946     		mov	r1, r5
+ 329 0094 FFF7FEFF 		bl	__aeabi_fadd
+  66:src/pixhawk/attitude_observer.c **** 	state_accel.z = z;
+ 330              		.loc 2 66 0
+ 331 0098 A060     		str	r0, [r4, #8]	@ float
+  67:src/pixhawk/attitude_observer.c **** 
+  68:src/pixhawk/attitude_observer.c **** 	//Predict magnet Vector
+  69:src/pixhawk/attitude_observer.c **** //	x = state_magnet.x + w3 * state_magnet.y - w2 * state_magnet.z;
+  70:src/pixhawk/attitude_observer.c **** //	y = -w3 * state_magnet.x + state_magnet.y + w1 * state_magnet.z;
+  71:src/pixhawk/attitude_observer.c **** //	z = w2 * state_magnet.x - w1 * state_magnet.y + state_magnet.z;
+  72:src/pixhawk/attitude_observer.c **** 
+  73:src/pixhawk/attitude_observer.c **** //	state_magnet.x = x;
+  74:src/pixhawk/attitude_observer.c **** //	state_magnet.y = y;
+  75:src/pixhawk/attitude_observer.c **** //	state_magnet.z = z;
+  76:src/pixhawk/attitude_observer.c **** }
+ 332              		.loc 2 76 0
+ 333 009a 05B0     		add	sp, sp, #20
+ 334 009c BDE8F08F 		pop	{r4, r5, r6, r7, r8, r9, sl, fp, pc}
+ 335              	.L19:
+ 336              		.align	2
+ 337              	.L18:
+ 338 00a0 0AD7A33B 		.word	1000593162
+ 339 00a4 00000000 		.word	.LANCHOR0
+ 340              		.cfi_endproc
+ 341              	.LFE3:
+ 343              		.global	__aeabi_f2d
+ 344              		.global	__aeabi_dmul
+ 345              		.global	__aeabi_i2f
+ 346              		.global	__aeabi_dadd
+ 347              		.global	__aeabi_d2f
+ 348              		.section	.text.attitude_observer_correct_accel,"ax",%progbits
+ 349              		.align	1
+ 350              		.global	attitude_observer_correct_accel
+ 351              		.thumb
+ 352              		.thumb_func
+ 354              	attitude_observer_correct_accel:
+ 355              	.LFB4:
+  77:src/pixhawk/attitude_observer.c **** 
+  78:src/pixhawk/attitude_observer.c **** 
+  79:src/pixhawk/attitude_observer.c **** 
+  80:src/pixhawk/attitude_observer.c **** void attitude_observer_correct_accel(int16_vect3 accel)
+  81:src/pixhawk/attitude_observer.c **** {
+ 356              		.loc 2 81 0
+ 357              		.cfi_startproc
+ 358              		@ args = 0, pretend = 0, frame = 8
+ 359              		@ frame_needed = 0, uses_anonymous_args = 0
+ 360 0000 73B5     		push	{r0, r1, r4, r5, r6, lr}
+ 361              	.LCFI6:
+ 362              		.cfi_def_cfa_offset 24
+  82:src/pixhawk/attitude_observer.c **** 	state_accel.x = state_accel.x * (1.0f
+ 363              		.loc 2 82 0
+ 364 0002 334E     		ldr	r6, .L21+16
+ 365              		.cfi_offset 14, -4
+ 366              		.cfi_offset 6, -8
+ 367              		.cfi_offset 5, -12
+ 368              		.cfi_offset 4, -16
+ 369              		.cfi_offset 1, -20
+ 370              		.cfi_offset 0, -24
+  81:src/pixhawk/attitude_observer.c **** {
+ 371              		.loc 2 81 0
+ 372 0004 6B46     		mov	r3, sp
+ 373 0006 83E80300 		stmia	r3, {r0, r1}
+ 374              		.loc 2 82 0
+ 375 000a 3068     		ldr	r0, [r6, #0]	@ float
+ 376 000c FFF7FEFF 		bl	__aeabi_f2d
+ 377 0010 2BA3     		adr	r3, .L21
+ 378 0012 D3E90023 		ldrd	r2, [r3]
+ 379 0016 FFF7FEFF 		bl	__aeabi_dmul
+ 380 001a 0446     		mov	r4, r0
+  83:src/pixhawk/attitude_observer.c **** 			- 0.0033)
+  84:src/pixhawk/attitude_observer.c **** 			+ 0.0033 * (float) accel.x;
+ 381              		.loc 2 84 0
+ 382 001c BDF90000 		ldrsh	r0, [sp, #0]
+  82:src/pixhawk/attitude_observer.c **** 	state_accel.x = state_accel.x * (1.0f
+ 383              		.loc 2 82 0
+ 384 0020 0D46     		mov	r5, r1
+ 385              		.loc 2 84 0
+ 386 0022 FFF7FEFF 		bl	__aeabi_i2f
+ 387 0026 FFF7FEFF 		bl	__aeabi_f2d
+ 388 002a 27A3     		adr	r3, .L21+8
+ 389 002c D3E90023 		ldrd	r2, [r3]
+ 390 0030 FFF7FEFF 		bl	__aeabi_dmul
+ 391 0034 0246     		mov	r2, r0
+ 392 0036 0B46     		mov	r3, r1
+ 393 0038 2046     		mov	r0, r4
+ 394 003a 2946     		mov	r1, r5
+ 395 003c FFF7FEFF 		bl	__aeabi_dadd
+  82:src/pixhawk/attitude_observer.c **** 	state_accel.x = state_accel.x * (1.0f
+ 396              		.loc 2 82 0
+ 397 0040 FFF7FEFF 		bl	__aeabi_d2f
+ 398 0044 3060     		str	r0, [r6, #0]	@ float
+  85:src/pixhawk/attitude_observer.c **** 	state_accel.y = state_accel.y * (1.0f
+ 399              		.loc 2 85 0
+ 400 0046 7068     		ldr	r0, [r6, #4]	@ float
+ 401 0048 FFF7FEFF 		bl	__aeabi_f2d
+ 402 004c 1CA3     		adr	r3, .L21
+ 403 004e D3E90023 		ldrd	r2, [r3]
+ 404 0052 FFF7FEFF 		bl	__aeabi_dmul
+ 405 0056 0446     		mov	r4, r0
+  86:src/pixhawk/attitude_observer.c **** 			- 0.0033)
+  87:src/pixhawk/attitude_observer.c **** 			+ 0.0033 * (float) accel.y;
+ 406              		.loc 2 87 0
+ 407 0058 BDF90200 		ldrsh	r0, [sp, #2]
+  85:src/pixhawk/attitude_observer.c **** 	state_accel.y = state_accel.y * (1.0f
+ 408              		.loc 2 85 0
+ 409 005c 0D46     		mov	r5, r1
+ 410              		.loc 2 87 0
+ 411 005e FFF7FEFF 		bl	__aeabi_i2f
+ 412 0062 FFF7FEFF 		bl	__aeabi_f2d
+ 413 0066 18A3     		adr	r3, .L21+8
+ 414 0068 D3E90023 		ldrd	r2, [r3]
+ 415 006c FFF7FEFF 		bl	__aeabi_dmul
+ 416 0070 0246     		mov	r2, r0
+ 417 0072 0B46     		mov	r3, r1
+ 418 0074 2046     		mov	r0, r4
+ 419 0076 2946     		mov	r1, r5
+ 420 0078 FFF7FEFF 		bl	__aeabi_dadd
+  85:src/pixhawk/attitude_observer.c **** 	state_accel.y = state_accel.y * (1.0f
+ 421              		.loc 2 85 0
+ 422 007c FFF7FEFF 		bl	__aeabi_d2f
+ 423 0080 7060     		str	r0, [r6, #4]	@ float
+  88:src/pixhawk/attitude_observer.c **** 	state_accel.z = state_accel.z * (1.0f
+ 424              		.loc 2 88 0
+ 425 0082 B068     		ldr	r0, [r6, #8]	@ float
+ 426 0084 FFF7FEFF 		bl	__aeabi_f2d
+ 427 0088 0DA3     		adr	r3, .L21
+ 428 008a D3E90023 		ldrd	r2, [r3]
+ 429 008e FFF7FEFF 		bl	__aeabi_dmul
+ 430 0092 0446     		mov	r4, r0
+  89:src/pixhawk/attitude_observer.c **** 			- 0.0033)
+  90:src/pixhawk/attitude_observer.c **** 			+ 0.0033 * (float) accel.z;
+ 431              		.loc 2 90 0
+ 432 0094 BDF90400 		ldrsh	r0, [sp, #4]
+  88:src/pixhawk/attitude_observer.c **** 	state_accel.z = state_accel.z * (1.0f
+ 433              		.loc 2 88 0
+ 434 0098 0D46     		mov	r5, r1
+ 435              		.loc 2 90 0
+ 436 009a FFF7FEFF 		bl	__aeabi_i2f
+ 437 009e FFF7FEFF 		bl	__aeabi_f2d
+ 438 00a2 09A3     		adr	r3, .L21+8
+ 439 00a4 D3E90023 		ldrd	r2, [r3]
+ 440 00a8 FFF7FEFF 		bl	__aeabi_dmul
+ 441 00ac 0246     		mov	r2, r0
+ 442 00ae 0B46     		mov	r3, r1
+ 443 00b0 2046     		mov	r0, r4
+ 444 00b2 2946     		mov	r1, r5
+ 445 00b4 FFF7FEFF 		bl	__aeabi_dadd
+  88:src/pixhawk/attitude_observer.c **** 	state_accel.z = state_accel.z * (1.0f
+ 446              		.loc 2 88 0
+ 447 00b8 FFF7FEFF 		bl	__aeabi_d2f
+ 448 00bc B060     		str	r0, [r6, #8]	@ float
+  91:src/pixhawk/attitude_observer.c **** }
+ 449              		.loc 2 91 0
+ 450 00be 7CBD     		pop	{r2, r3, r4, r5, r6, pc}
+ 451              	.L22:
+ 452              		.align	3
+ 453              	.L21:
+ 454 00c0 DB8AFD65 		.word	1711114971
+ 455 00c4 F7E4EF3F 		.word	1072686327
+ 456 00c8 46257502 		.word	41231686
+ 457 00cc 9A086B3F 		.word	1063979162
+ 458 00d0 00000000 		.word	.LANCHOR0
+ 459              		.cfi_endproc
+ 460              	.LFE4:
+ 462 00d4 AFF30080 		.section	.text.attitude_observer_correct_magnet,"ax",%progbits
+ 463              		.align	1
+ 464              		.global	attitude_observer_correct_magnet
+ 465              		.thumb
+ 466              		.thumb_func
+ 468              	attitude_observer_correct_magnet:
+ 469              	.LFB5:
+  92:src/pixhawk/attitude_observer.c **** 
+  93:src/pixhawk/attitude_observer.c **** void attitude_observer_correct_magnet(int16_vect3 magnet)
+  94:src/pixhawk/attitude_observer.c **** {
+ 470              		.loc 2 94 0
+ 471              		.cfi_startproc
+ 472              		@ args = 0, pretend = 0, frame = 8
+ 473              		@ frame_needed = 0, uses_anonymous_args = 0
+ 474              		@ link register save eliminated.
+ 475 0000 82B0     		sub	sp, sp, #8
+ 476              	.LCFI7:
+ 477              		.cfi_def_cfa_offset 8
+ 478              		.loc 2 94 0
+ 479 0002 6B46     		mov	r3, sp
+ 480 0004 83E80300 		stmia	r3, {r0, r1}
+  95:src/pixhawk/attitude_observer.c **** 	// Debug output
+  96:src/pixhawk/attitude_observer.c **** //
+  97:src/pixhawk/attitude_observer.c **** //	float_vect3 mag_cor;
+  98:src/pixhawk/attitude_observer.c **** //	mag_cor.x = magnet.x;
+  99:src/pixhawk/attitude_observer.c **** //	mag_cor.y = magnet.y;
+ 100:src/pixhawk/attitude_observer.c **** //	mag_cor.z = magnet.z;
+ 101:src/pixhawk/attitude_observer.c **** //
+ 102:src/pixhawk/attitude_observer.c **** //	float_vect3 mag_pred;
+ 103:src/pixhawk/attitude_observer.c **** //	mag_pred.x = state_magnet.x;
+ 104:src/pixhawk/attitude_observer.c **** //	mag_pred.y = state_magnet.y;
+ 105:src/pixhawk/attitude_observer.c **** //	mag_pred.z = state_magnet.z;
+ 106:src/pixhawk/attitude_observer.c **** //
+ 107:src/pixhawk/attitude_observer.c **** //	debug_vect("mgc", mag_cor);
+ 108:src/pixhawk/attitude_observer.c **** //	debug_vect("mgp", mag_pred);
+ 109:src/pixhawk/attitude_observer.c **** 
+ 110:src/pixhawk/attitude_observer.c **** ///	state_magnet.x = state_magnet.x * (1.0f-K_MAGNET)
+ 111:src/pixhawk/attitude_observer.c **** //			+ K_MAGNET * (float) magnet.x;
+ 112:src/pixhawk/attitude_observer.c **** //	state_magnet.y = state_magnet.y * (1.0f-K_MAGNET)
+ 113:src/pixhawk/attitude_observer.c **** //			+ K_MAGNET * (float) magnet.y;
+ 114:src/pixhawk/attitude_observer.c **** //	state_magnet.z = state_magnet.z * (1.0f-K_MAGNET)
+ 115:src/pixhawk/attitude_observer.c **** //			+ K_MAGNET * (float) magnet.z;
+ 116:src/pixhawk/attitude_observer.c **** }
+ 481              		.loc 2 116 0
+ 482 0008 02B0     		add	sp, sp, #8
+ 483 000a 7047     		bx	lr
+ 484              		.cfi_endproc
+ 485              	.LFE5:
+ 487              		.section	.text.attitude_observer_get_angles,"ax",%progbits
+ 488              		.align	1
+ 489              		.global	attitude_observer_get_angles
+ 490              		.thumb
+ 491              		.thumb_func
+ 493              	attitude_observer_get_angles:
+ 494              	.LFB6:
+ 117:src/pixhawk/attitude_observer.c **** 
+ 118:src/pixhawk/attitude_observer.c **** void attitude_observer_get_angles(float_vect3* angles){
+ 495              		.loc 2 118 0
+ 496              		.cfi_startproc
+ 497              		@ args = 0, pretend = 0, frame = 0
+ 498              		@ frame_needed = 0, uses_anonymous_args = 0
+ 499              	.LVL25:
+ 500 0000 70B5     		push	{r4, r5, r6, lr}
+ 501              	.LCFI8:
+ 502              		.cfi_def_cfa_offset 16
+ 119:src/pixhawk/attitude_observer.c **** 
+ 120:src/pixhawk/attitude_observer.c **** 	angles->x = fast_atan2(-state_accel.y, -state_accel.z);
+ 503              		.loc 2 120 0
+ 504 0002 0A4C     		ldr	r4, .L25
+ 505              		.cfi_offset 14, -4
+ 506              		.cfi_offset 6, -8
+ 507              		.cfi_offset 5, -12
+ 508              		.cfi_offset 4, -16
+ 118:src/pixhawk/attitude_observer.c **** void attitude_observer_get_angles(float_vect3* angles){
+ 509              		.loc 2 118 0
+ 510 0004 0546     		mov	r5, r0
+ 511              		.loc 2 120 0
+ 512 0006 A668     		ldr	r6, [r4, #8]
+ 513 0008 6068     		ldr	r0, [r4, #4]
+ 514              	.LVL26:
+ 515 000a 06F10046 		add	r6, r6, #-2147483648
+ 516 000e 3146     		mov	r1, r6
+ 517 0010 00F10040 		add	r0, r0, #-2147483648
+ 518 0014 FFF7FEFF 		bl	fast_atan2
+ 519 0018 2860     		str	r0, [r5, #0]	@ float
+ 121:src/pixhawk/attitude_observer.c **** 	angles->y = fast_atan2(-state_accel.x, -state_accel.z);
+ 520              		.loc 2 121 0
+ 521 001a 2068     		ldr	r0, [r4, #0]
+ 522 001c 3146     		mov	r1, r6
+ 523 001e 00F10040 		add	r0, r0, #-2147483648
+ 524 0022 FFF7FEFF 		bl	fast_atan2
+ 525 0026 6860     		str	r0, [r5, #4]	@ float
+ 122:src/pixhawk/attitude_observer.c **** 
+ 123:src/pixhawk/attitude_observer.c **** //	angles->y = asin(state_accel.x / 1.0f);
+ 124:src/pixhawk/attitude_observer.c **** 
+ 125:src/pixhawk/attitude_observer.c **** //	angles->x = -state_accel.x;
+ 126:src/pixhawk/attitude_observer.c **** //	angles->y = -state_accel.y;
+ 127:src/pixhawk/attitude_observer.c **** 
+ 128:src/pixhawk/attitude_observer.c **** ///	float x = cos(angles->y) * state_magnet.x + sin(angles->x) * sin(angles->y)
+ 129:src/pixhawk/attitude_observer.c **** //			* state_magnet.y + cos(angles->x) * sin(angles->y) * state_magnet.z;
+ 130:src/pixhawk/attitude_observer.c **** 
+ 131:src/pixhawk/attitude_observer.c **** //	float y = cos(angles->x) * state_magnet.y - sin(angles->x) * state_magnet.z;
+ 132:src/pixhawk/attitude_observer.c **** //	angles->z = atan2(x, y);
+ 133:src/pixhawk/attitude_observer.c **** 
+ 134:src/pixhawk/attitude_observer.c **** 	//mavlink_msg_debug_send(MAVLINK_COMM_0, 66, atan2(x, y));
+ 135:src/pixhawk/attitude_observer.c **** 	//mavlink_msg_debug_send(MAVLINK_COMM_0, 60, x);
+ 136:src/pixhawk/attitude_observer.c **** 	//mavlink_msg_debug_send(MAVLINK_COMM_0, 61, y);
+ 137:src/pixhawk/attitude_observer.c **** }
+ 526              		.loc 2 137 0
+ 527 0028 70BD     		pop	{r4, r5, r6, pc}
+ 528              	.L26:
+ 529 002a 00BF     		.align	2
+ 530              	.L25:
+ 531 002c 00000000 		.word	.LANCHOR0
+ 532              		.cfi_endproc
+ 533              	.LFE6:
+ 535              		.section	.bss.state_magnet,"aw",%nobits
+ 536              		.align	2
+ 537              		.set	.LANCHOR1,. + 0
+ 540              	state_magnet:
+ 541 0000 00000000 		.space	12
+ 541      00000000 
+ 541      00000000 
+ 542              		.section	.bss.state_accel,"aw",%nobits
+ 543              		.align	2
+ 544              		.set	.LANCHOR0,. + 0
+ 547              	state_accel:
+ 548 0000 00000000 		.space	12
+ 548      00000000 
+ 548      00000000 
+ 549              		.text
+ 550              	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 attitude_observer.c
+C:\Users\MICHAE~1\AppData\Local\Temp\ccIZWwzY.s:30     .text.fast_atan2:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccIZWwzY.s:34     .text.fast_atan2:00000000 fast_atan2
+C:\Users\MICHAE~1\AppData\Local\Temp\ccIZWwzY.s:161    .text.fast_atan2:0000009c $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccIZWwzY.s:170    .text.attitude_observer_init:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccIZWwzY.s:175    .text.attitude_observer_init:00000000 attitude_observer_init
+C:\Users\MICHAE~1\AppData\Local\Temp\ccIZWwzY.s:215    .text.attitude_observer_init:00000030 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccIZWwzY.s:221    .text.attitude_observer_predict:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccIZWwzY.s:226    .text.attitude_observer_predict:00000000 attitude_observer_predict
+C:\Users\MICHAE~1\AppData\Local\Temp\ccIZWwzY.s:338    .text.attitude_observer_predict:000000a0 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccIZWwzY.s:349    .text.attitude_observer_correct_accel:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccIZWwzY.s:354    .text.attitude_observer_correct_accel:00000000 attitude_observer_correct_accel
+C:\Users\MICHAE~1\AppData\Local\Temp\ccIZWwzY.s:454    .text.attitude_observer_correct_accel:000000c0 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccIZWwzY.s:463    .text.attitude_observer_correct_magnet:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccIZWwzY.s:468    .text.attitude_observer_correct_magnet:00000000 attitude_observer_correct_magnet
+C:\Users\MICHAE~1\AppData\Local\Temp\ccIZWwzY.s:488    .text.attitude_observer_get_angles:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccIZWwzY.s:493    .text.attitude_observer_get_angles:00000000 attitude_observer_get_angles
+C:\Users\MICHAE~1\AppData\Local\Temp\ccIZWwzY.s:531    .text.attitude_observer_get_angles:0000002c $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccIZWwzY.s:536    .bss.state_magnet:00000000 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccIZWwzY.s:540    .bss.state_magnet:00000000 state_magnet
+C:\Users\MICHAE~1\AppData\Local\Temp\ccIZWwzY.s:543    .bss.state_accel:00000000 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccIZWwzY.s:547    .bss.state_accel:00000000 state_accel
+                     .debug_frame:00000010 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccIZWwzY.s:462    .text.attitude_observer_correct_accel:000000d4 $t
+
+UNDEFINED SYMBOLS
+__aeabi_fcmpge
+__aeabi_fadd
+__aeabi_fsub
+__aeabi_fdiv
+__aeabi_fmul
+__aeabi_fcmplt
+__aeabi_f2d
+__aeabi_dmul
+__aeabi_i2f
+__aeabi_dadd
+__aeabi_d2f

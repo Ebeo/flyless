@@ -1,0 +1,569 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 18, 4
+  12              		.thumb
+  13              		.file	"uart.c"
+  21              	.Ltext0:
+  22              		.cfi_sections	.debug_frame
+  23              		.section	.text.UART_CharAvailable,"ax",%progbits
+  24              		.align	1
+  25              		.global	UART_CharAvailable
+  26              		.thumb
+  27              		.thumb_func
+  29              	UART_CharAvailable:
+  30              	.LFB29:
+  31              		.file 1 "src/hal/uart.c"
+   1:src/hal/uart.c **** /*
+   2:src/hal/uart.c **** 	FLYLess
+   3:src/hal/uart.c **** 	flyless.wikidot.com
+   4:src/hal/uart.c **** 	contact: <m.bubestinger@gmail.com>
+   5:src/hal/uart.c **** 
+   6:src/hal/uart.c **** 
+   7:src/hal/uart.c ****   	This file is part of FLYless.
+   8:src/hal/uart.c **** 
+   9:src/hal/uart.c ****     FLYLess is free software: you can redistribute it and/or modify
+  10:src/hal/uart.c ****     it under the terms of the GNU General Public License as published by
+  11:src/hal/uart.c ****     the Free Software Foundation, either version 3 of the License, or
+  12:src/hal/uart.c ****     (at your option) any later version.
+  13:src/hal/uart.c **** 
+  14:src/hal/uart.c ****     FLYLess is distributed in the hope that it will be useful,
+  15:src/hal/uart.c ****     but WITHOUT ANY WARRANTY; without even the implied warranty of
+  16:src/hal/uart.c ****     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  17:src/hal/uart.c ****     GNU General Public License for more details.
+  18:src/hal/uart.c **** 
+  19:src/hal/uart.c ****     You should have received a copy of the GNU General Public License
+  20:src/hal/uart.c ****     along with FLYLess.  If not, see <http://www.gnu.org/licenses/>.
+  21:src/hal/uart.c **** */
+  22:src/hal/uart.c **** 
+  23:src/hal/uart.c **** /**
+  24:src/hal/uart.c ****  * @file uart.c
+  25:src/hal/uart.c ****  * @author Michael Bubestinger
+  26:src/hal/uart.c ****  * C-file for UART Interface
+  27:src/hal/uart.c ****  */
+  28:src/hal/uart.c **** 
+  29:src/hal/uart.c **** #include "uart.h"
+  30:src/hal/uart.c **** 
+  31:src/hal/uart.c **** #include "stm32f10x.h"
+  32:src/hal/uart.c **** #include "stm32f10x_conf.h"
+  33:src/hal/uart.c **** 
+  34:src/hal/uart.c **** 
+  35:src/hal/uart.c **** 
+  36:src/hal/uart.c **** 
+  37:src/hal/uart.c **** uint8_t		  RX_Buffer[50];
+  38:src/hal/uart.c **** uint8_t		  RX_Insert, RX_Extract;
+  39:src/hal/uart.c **** 
+  40:src/hal/uart.c **** uint8_t UART_CharAvailable(void)
+  41:src/hal/uart.c **** {
+  32              		.loc 1 41 0
+  33              		.cfi_startproc
+  34              		@ args = 0, pretend = 0, frame = 0
+  35              		@ frame_needed = 0, uses_anonymous_args = 0
+  36              		@ link register save eliminated.
+  42:src/hal/uart.c **** 	return(RX_Insert != RX_Extract);
+  37              		.loc 1 42 0
+  38 0000 034B     		ldr	r3, .L2
+  39 0002 1878     		ldrb	r0, [r3, #0]	@ zero_extendqisi2
+  40 0004 034B     		ldr	r3, .L2+4
+  41 0006 1B78     		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+  43:src/hal/uart.c **** }
+  42              		.loc 1 43 0
+  43 0008 C01A     		subs	r0, r0, r3
+  44 000a 18BF     		it	ne
+  45 000c 0120     		movne	r0, #1
+  46 000e 7047     		bx	lr
+  47              	.L3:
+  48              		.align	2
+  49              	.L2:
+  50 0010 00000000 		.word	RX_Insert
+  51 0014 00000000 		.word	RX_Extract
+  52              		.cfi_endproc
+  53              	.LFE29:
+  55              		.section	.text.UART_GetChar,"ax",%progbits
+  56              		.align	1
+  57              		.global	UART_GetChar
+  58              		.thumb
+  59              		.thumb_func
+  61              	UART_GetChar:
+  62              	.LFB30:
+  44:src/hal/uart.c **** 
+  45:src/hal/uart.c **** uint8_t UART_GetChar(void)
+  46:src/hal/uart.c **** {
+  63              		.loc 1 46 0
+  64              		.cfi_startproc
+  65              		@ args = 0, pretend = 0, frame = 0
+  66              		@ frame_needed = 0, uses_anonymous_args = 0
+  67              		@ link register save eliminated.
+  47:src/hal/uart.c **** 	uint8_t c = RX_Buffer[RX_Extract];
+  68              		.loc 1 47 0
+  69 0000 054B     		ldr	r3, .L5
+  70 0002 0649     		ldr	r1, .L5+4
+  71 0004 1A78     		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+  72 0006 885C     		ldrb	r0, [r1, r2]	@ zero_extendqisi2
+  73              	.LVL0:
+  48:src/hal/uart.c **** 	RX_Extract = (RX_Extract + 1)%255;
+  74              		.loc 1 48 0
+  75 0008 0132     		adds	r2, r2, #1
+  76 000a FF21     		movs	r1, #255
+  77 000c 92FBF1F1 		sdiv	r1, r2, r1
+  78 0010 5218     		adds	r2, r2, r1
+  79 0012 1A70     		strb	r2, [r3, #0]
+  49:src/hal/uart.c **** 	return c;
+  50:src/hal/uart.c **** }
+  80              		.loc 1 50 0
+  81 0014 7047     		bx	lr
+  82              	.L6:
+  83 0016 00BF     		.align	2
+  84              	.L5:
+  85 0018 00000000 		.word	RX_Extract
+  86 001c 00000000 		.word	RX_Buffer
+  87              		.cfi_endproc
+  88              	.LFE30:
+  90              		.section	.text.UART_SendChar,"ax",%progbits
+  91              		.align	1
+  92              		.global	UART_SendChar
+  93              		.thumb
+  94              		.thumb_func
+  96              	UART_SendChar:
+  97              	.LFB31:
+  51:src/hal/uart.c **** 
+  52:src/hal/uart.c **** void UART_SendChar(uint8_t c)
+  53:src/hal/uart.c **** {
+  98              		.loc 1 53 0
+  99              		.cfi_startproc
+ 100              		@ args = 0, pretend = 0, frame = 0
+ 101              		@ frame_needed = 0, uses_anonymous_args = 0
+ 102              	.LVL1:
+ 103 0000 0146     		mov	r1, r0
+ 104 0002 08B5     		push	{r3, lr}
+ 105              	.LCFI0:
+ 106              		.cfi_def_cfa_offset 8
+  54:src/hal/uart.c **** 	USART_SendData(USART1,c);
+ 107              		.loc 1 54 0
+ 108 0004 0448     		ldr	r0, .L9
+ 109              	.LVL2:
+ 110              		.cfi_offset 14, -4
+ 111              		.cfi_offset 3, -8
+ 112 0006 FFF7FEFF 		bl	USART_SendData
+ 113              	.L8:
+  55:src/hal/uart.c **** 	while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET);
+ 114              		.loc 1 55 0 discriminator 1
+ 115 000a 0348     		ldr	r0, .L9
+ 116 000c 4021     		movs	r1, #64
+ 117 000e FFF7FEFF 		bl	USART_GetFlagStatus
+ 118 0012 0028     		cmp	r0, #0
+ 119 0014 F9D0     		beq	.L8
+  56:src/hal/uart.c **** }
+ 120              		.loc 1 56 0
+ 121 0016 08BD     		pop	{r3, pc}
+ 122              	.L10:
+ 123              		.align	2
+ 124              	.L9:
+ 125 0018 00380140 		.word	1073821696
+ 126              		.cfi_endproc
+ 127              	.LFE31:
+ 129              		.section	.text.UART_Send,"ax",%progbits
+ 130              		.align	1
+ 131              		.global	UART_Send
+ 132              		.thumb
+ 133              		.thumb_func
+ 135              	UART_Send:
+ 136              	.LFB32:
+  57:src/hal/uart.c **** 
+  58:src/hal/uart.c **** void UART_Send(uint8_t* c, uint8_t len)
+  59:src/hal/uart.c **** {
+ 137              		.loc 1 59 0
+ 138              		.cfi_startproc
+ 139              		@ args = 0, pretend = 0, frame = 0
+ 140              		@ frame_needed = 0, uses_anonymous_args = 0
+ 141              	.LVL3:
+ 142 0000 70B5     		push	{r4, r5, r6, lr}
+ 143              	.LCFI1:
+ 144              		.cfi_def_cfa_offset 16
+ 145              		.loc 1 59 0
+ 146 0002 0E46     		mov	r6, r1
+ 147              		.cfi_offset 14, -4
+ 148              		.cfi_offset 6, -8
+ 149              		.cfi_offset 5, -12
+ 150              		.cfi_offset 4, -16
+  60:src/hal/uart.c **** 	uint8_t i = 0;
+ 151              		.loc 1 60 0
+ 152 0004 0546     		mov	r5, r0
+ 153 0006 0024     		movs	r4, #0
+  61:src/hal/uart.c **** 
+  62:src/hal/uart.c **** 	while(i<len)
+ 154              		.loc 1 62 0
+ 155 0008 0CE0     		b	.L12
+ 156              	.LVL4:
+ 157              	.L14:
+  63:src/hal/uart.c **** 	{
+  64:src/hal/uart.c **** 		USART_SendData(USART1, (uint8_t) c[i]);
+ 158              		.loc 1 64 0
+ 159 000a 0848     		ldr	r0, .L15
+ 160 000c 15F8011B 		ldrb	r1, [r5], #1	@ zero_extendqisi2
+ 161 0010 FFF7FEFF 		bl	USART_SendData
+ 162              	.L13:
+  65:src/hal/uart.c **** 		while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET);
+ 163              		.loc 1 65 0 discriminator 1
+ 164 0014 0548     		ldr	r0, .L15
+ 165 0016 4021     		movs	r1, #64
+ 166 0018 FFF7FEFF 		bl	USART_GetFlagStatus
+ 167 001c 0028     		cmp	r0, #0
+ 168 001e F9D0     		beq	.L13
+  66:src/hal/uart.c **** 		i++;
+ 169              		.loc 1 66 0
+ 170 0020 0134     		adds	r4, r4, #1
+ 171              	.LVL5:
+ 172 0022 E4B2     		uxtb	r4, r4
+ 173              	.LVL6:
+ 174              	.L12:
+  62:src/hal/uart.c **** 	while(i<len)
+ 175              		.loc 1 62 0 discriminator 1
+ 176 0024 B442     		cmp	r4, r6
+ 177 0026 F0D3     		bcc	.L14
+  67:src/hal/uart.c **** 	}
+  68:src/hal/uart.c **** }
+ 178              		.loc 1 68 0
+ 179 0028 70BD     		pop	{r4, r5, r6, pc}
+ 180              	.L16:
+ 181 002a 00BF     		.align	2
+ 182              	.L15:
+ 183 002c 00380140 		.word	1073821696
+ 184              		.cfi_endproc
+ 185              	.LFE32:
+ 187              		.section	.text.UART_Puts,"ax",%progbits
+ 188              		.align	1
+ 189              		.global	UART_Puts
+ 190              		.thumb
+ 191              		.thumb_func
+ 193              	UART_Puts:
+ 194              	.LFB33:
+  69:src/hal/uart.c **** void UART_Puts(uint8_t* c)
+  70:src/hal/uart.c **** {
+ 195              		.loc 1 70 0
+ 196              		.cfi_startproc
+ 197              		@ args = 0, pretend = 0, frame = 0
+ 198              		@ frame_needed = 0, uses_anonymous_args = 0
+ 199              	.LVL7:
+ 200 0000 38B5     		push	{r3, r4, r5, lr}
+ 201              	.LCFI2:
+ 202              		.cfi_def_cfa_offset 16
+ 203              		.loc 1 70 0
+ 204 0002 0546     		mov	r5, r0
+ 205              		.cfi_offset 14, -4
+ 206              		.cfi_offset 5, -8
+ 207              		.cfi_offset 4, -12
+ 208              		.cfi_offset 3, -16
+  71:src/hal/uart.c **** 	uint8_t i = 0;
+ 209              		.loc 1 71 0
+ 210 0004 0024     		movs	r4, #0
+  72:src/hal/uart.c **** 
+  73:src/hal/uart.c **** 	while(c[i] != 0x0)
+ 211              		.loc 1 73 0
+ 212 0006 0AE0     		b	.L18
+ 213              	.LVL8:
+ 214              	.L20:
+  74:src/hal/uart.c **** 	{
+  75:src/hal/uart.c **** 		USART_SendData(USART1, (uint8_t) c[i]);
+ 215              		.loc 1 75 0
+ 216 0008 0748     		ldr	r0, .L21
+ 217 000a FFF7FEFF 		bl	USART_SendData
+ 218              	.L19:
+  76:src/hal/uart.c **** 		while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET);
+ 219              		.loc 1 76 0 discriminator 1
+ 220 000e 0648     		ldr	r0, .L21
+ 221 0010 4021     		movs	r1, #64
+ 222 0012 FFF7FEFF 		bl	USART_GetFlagStatus
+ 223 0016 0028     		cmp	r0, #0
+ 224 0018 F9D0     		beq	.L19
+  77:src/hal/uart.c **** 		i++;
+ 225              		.loc 1 77 0
+ 226 001a 0134     		adds	r4, r4, #1
+ 227              	.LVL9:
+ 228 001c E4B2     		uxtb	r4, r4
+ 229              	.LVL10:
+ 230              	.L18:
+  73:src/hal/uart.c **** 	while(c[i] != 0x0)
+ 231              		.loc 1 73 0 discriminator 1
+ 232 001e 295D     		ldrb	r1, [r5, r4]	@ zero_extendqisi2
+ 233 0020 0029     		cmp	r1, #0
+ 234 0022 F1D1     		bne	.L20
+  78:src/hal/uart.c **** 	}
+  79:src/hal/uart.c **** }
+ 235              		.loc 1 79 0
+ 236 0024 38BD     		pop	{r3, r4, r5, pc}
+ 237              	.L22:
+ 238 0026 00BF     		.align	2
+ 239              	.L21:
+ 240 0028 00380140 		.word	1073821696
+ 241              		.cfi_endproc
+ 242              	.LFE33:
+ 244              		.section	.text.UART_Protocol_Init,"ax",%progbits
+ 245              		.align	1
+ 246              		.global	UART_Protocol_Init
+ 247              		.thumb
+ 248              		.thumb_func
+ 250              	UART_Protocol_Init:
+ 251              	.LFB34:
+  80:src/hal/uart.c **** 
+  81:src/hal/uart.c **** 
+  82:src/hal/uart.c **** void UART_Protocol_Init()
+  83:src/hal/uart.c **** {
+ 252              		.loc 1 83 0
+ 253              		.cfi_startproc
+ 254              		@ args = 0, pretend = 0, frame = 24
+ 255              		@ frame_needed = 0, uses_anonymous_args = 0
+ 256 0000 30B5     		push	{r4, r5, lr}
+ 257              	.LCFI3:
+ 258              		.cfi_def_cfa_offset 12
+  84:src/hal/uart.c **** 
+  85:src/hal/uart.c **** 	NVIC_InitTypeDef NVIC_InitStructure;
+  86:src/hal/uart.c **** 
+  87:src/hal/uart.c **** 
+  88:src/hal/uart.c **** 	GPIO_InitTypeDef GPIO_InitStructure;
+  89:src/hal/uart.c **** 	USART_InitTypeDef USART_InitStructure;
+  90:src/hal/uart.c **** 
+  91:src/hal/uart.c **** 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+ 259              		.loc 1 91 0
+ 260 0002 1823     		movs	r3, #24
+  83:src/hal/uart.c **** {
+ 261              		.loc 1 83 0
+ 262 0004 87B0     		sub	sp, sp, #28
+ 263              	.LCFI4:
+ 264              		.cfi_def_cfa_offset 40
+ 265              		.loc 1 91 0
+ 266 0006 8DF81330 		strb	r3, [sp, #19]
+  92:src/hal/uart.c ****  	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
+ 267              		.loc 1 92 0
+ 268 000a 4FF40073 		mov	r3, #512	@ movhi
+ 269 000e ADF81030 		strh	r3, [sp, #16]	@ movhi
+  93:src/hal/uart.c ****   	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  94:src/hal/uart.c ****   	GPIO_Init(GPIOA, &GPIO_InitStructure);
+ 270              		.loc 1 94 0
+ 271 0012 04A9     		add	r1, sp, #16
+  93:src/hal/uart.c ****   	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+ 272              		.loc 1 93 0
+ 273 0014 0323     		movs	r3, #3
+ 274              		.loc 1 94 0
+ 275 0016 1D48     		ldr	r0, .L24
+  93:src/hal/uart.c ****   	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+ 276              		.loc 1 93 0
+ 277 0018 8DF81230 		strb	r3, [sp, #18]
+ 278              		.loc 1 94 0
+ 279              		.cfi_offset 14, -4
+ 280              		.cfi_offset 5, -8
+ 281              		.cfi_offset 4, -12
+ 282 001c FFF7FEFF 		bl	GPIO_Init
+  95:src/hal/uart.c **** 
+  96:src/hal/uart.c **** 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+ 283              		.loc 1 96 0
+ 284 0020 0423     		movs	r3, #4
+  97:src/hal/uart.c ****   	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
+  98:src/hal/uart.c ****   	GPIO_Init(GPIOA, &GPIO_InitStructure);
+ 285              		.loc 1 98 0
+ 286 0022 04A9     		add	r1, sp, #16
+  96:src/hal/uart.c **** 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+ 287              		.loc 1 96 0
+ 288 0024 8DF81330 		strb	r3, [sp, #19]
+ 289              		.loc 1 98 0
+ 290 0028 1848     		ldr	r0, .L24
+  97:src/hal/uart.c ****   	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
+ 291              		.loc 1 97 0
+ 292 002a 4FF48063 		mov	r3, #1024	@ movhi
+  99:src/hal/uart.c **** 
+ 100:src/hal/uart.c **** 	NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
+ 101:src/hal/uart.c **** 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+ 293              		.loc 1 101 0
+ 294 002e 0025     		movs	r5, #0
+ 102:src/hal/uart.c **** 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+ 295              		.loc 1 102 0
+ 296 0030 0124     		movs	r4, #1
+  97:src/hal/uart.c ****   	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
+ 297              		.loc 1 97 0
+ 298 0032 ADF81030 		strh	r3, [sp, #16]	@ movhi
+  98:src/hal/uart.c ****   	GPIO_Init(GPIOA, &GPIO_InitStructure);
+ 299              		.loc 1 98 0
+ 300 0036 FFF7FEFF 		bl	GPIO_Init
+ 100:src/hal/uart.c **** 	NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
+ 301              		.loc 1 100 0
+ 302 003a 2523     		movs	r3, #37
+ 103:src/hal/uart.c **** 	NVIC_Init(&NVIC_InitStructure);
+ 303              		.loc 1 103 0
+ 304 003c 05A8     		add	r0, sp, #20
+ 100:src/hal/uart.c **** 	NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
+ 305              		.loc 1 100 0
+ 306 003e 8DF81430 		strb	r3, [sp, #20]
+ 101:src/hal/uart.c **** 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+ 307              		.loc 1 101 0
+ 308 0042 8DF81650 		strb	r5, [sp, #22]
+ 102:src/hal/uart.c **** 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+ 309              		.loc 1 102 0
+ 310 0046 8DF81740 		strb	r4, [sp, #23]
+ 311              		.loc 1 103 0
+ 312 004a FFF7FEFF 		bl	NVIC_Init
+ 104:src/hal/uart.c **** 
+ 105:src/hal/uart.c **** 	USART_InitStructure.USART_BaudRate = 115200;
+ 313              		.loc 1 105 0
+ 314 004e 4FF4E133 		mov	r3, #115200
+ 315 0052 0093     		str	r3, [sp, #0]
+ 106:src/hal/uart.c **** 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+ 107:src/hal/uart.c **** 	USART_InitStructure.USART_StopBits = USART_StopBits_1;
+ 108:src/hal/uart.c **** 	USART_InitStructure.USART_Parity = USART_Parity_No;
+ 109:src/hal/uart.c **** 	USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+ 110:src/hal/uart.c **** 	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+ 111:src/hal/uart.c **** 
+ 112:src/hal/uart.c **** 	USART_Init(USART1, &USART_InitStructure);
+ 316              		.loc 1 112 0
+ 317 0054 6946     		mov	r1, sp
+ 110:src/hal/uart.c **** 	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+ 318              		.loc 1 110 0
+ 319 0056 0C23     		movs	r3, #12
+ 320              		.loc 1 112 0
+ 321 0058 0D48     		ldr	r0, .L24+4
+ 110:src/hal/uart.c **** 	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+ 322              		.loc 1 110 0
+ 323 005a ADF80A30 		strh	r3, [sp, #10]	@ movhi
+ 106:src/hal/uart.c **** 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+ 324              		.loc 1 106 0
+ 325 005e ADF80450 		strh	r5, [sp, #4]	@ movhi
+ 107:src/hal/uart.c **** 	USART_InitStructure.USART_StopBits = USART_StopBits_1;
+ 326              		.loc 1 107 0
+ 327 0062 ADF80650 		strh	r5, [sp, #6]	@ movhi
+ 108:src/hal/uart.c **** 	USART_InitStructure.USART_Parity = USART_Parity_No;
+ 328              		.loc 1 108 0
+ 329 0066 ADF80850 		strh	r5, [sp, #8]	@ movhi
+ 109:src/hal/uart.c **** 	USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+ 330              		.loc 1 109 0
+ 331 006a ADF80C50 		strh	r5, [sp, #12]	@ movhi
+ 332              		.loc 1 112 0
+ 333 006e FFF7FEFF 		bl	USART_Init
+ 113:src/hal/uart.c **** 	USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
+ 334              		.loc 1 113 0
+ 335 0072 0748     		ldr	r0, .L24+4
+ 336 0074 40F22551 		movw	r1, #1317
+ 337 0078 2246     		mov	r2, r4
+ 338 007a FFF7FEFF 		bl	USART_ITConfig
+ 114:src/hal/uart.c **** 	USART_Cmd(USART1, ENABLE);
+ 339              		.loc 1 114 0
+ 340 007e 0448     		ldr	r0, .L24+4
+ 341 0080 2146     		mov	r1, r4
+ 342 0082 FFF7FEFF 		bl	USART_Cmd
+ 115:src/hal/uart.c **** 
+ 116:src/hal/uart.c **** }
+ 343              		.loc 1 116 0
+ 344 0086 07B0     		add	sp, sp, #28
+ 345 0088 30BD     		pop	{r4, r5, pc}
+ 346              	.L25:
+ 347 008a 00BF     		.align	2
+ 348              	.L24:
+ 349 008c 00080140 		.word	1073809408
+ 350 0090 00380140 		.word	1073821696
+ 351              		.cfi_endproc
+ 352              	.LFE34:
+ 354              		.section	.text.USART1_IRQHandler,"ax",%progbits
+ 355              		.align	1
+ 356              		.global	USART1_IRQHandler
+ 357              		.thumb
+ 358              		.thumb_func
+ 360              	USART1_IRQHandler:
+ 361              	.LFB35:
+ 117:src/hal/uart.c **** 
+ 118:src/hal/uart.c **** void USART1_IRQHandler(void)
+ 119:src/hal/uart.c **** {
+ 362              		.loc 1 119 0
+ 363              		.cfi_startproc
+ 364              		@ args = 0, pretend = 0, frame = 0
+ 365              		@ frame_needed = 0, uses_anonymous_args = 0
+ 366 0000 38B5     		push	{r3, r4, r5, lr}
+ 367              	.LCFI5:
+ 368              		.cfi_def_cfa_offset 16
+ 120:src/hal/uart.c **** 	if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)
+ 369              		.loc 1 120 0
+ 370 0002 0A48     		ldr	r0, .L28
+ 371 0004 40F22551 		movw	r1, #1317
+ 372              		.cfi_offset 14, -4
+ 373              		.cfi_offset 5, -8
+ 374              		.cfi_offset 4, -12
+ 375              		.cfi_offset 3, -16
+ 376 0008 FFF7FEFF 		bl	USART_GetITStatus
+ 377 000c 68B1     		cbz	r0, .L26
+ 121:src/hal/uart.c **** 	  {
+ 122:src/hal/uart.c **** 		RX_Buffer[RX_Insert] = USART_ReceiveData(USART1);
+ 378              		.loc 1 122 0
+ 379 000e 084C     		ldr	r4, .L28+4
+ 380 0010 0648     		ldr	r0, .L28
+ 381 0012 2578     		ldrb	r5, [r4, #0]	@ zero_extendqisi2
+ 382 0014 FFF7FEFF 		bl	USART_ReceiveData
+ 383 0018 064B     		ldr	r3, .L28+8
+ 123:src/hal/uart.c **** 		RX_Insert = (RX_Insert + 1)%255;
+ 384              		.loc 1 123 0
+ 385 001a FF22     		movs	r2, #255
+ 122:src/hal/uart.c **** 		RX_Buffer[RX_Insert] = USART_ReceiveData(USART1);
+ 386              		.loc 1 122 0
+ 387 001c 5855     		strb	r0, [r3, r5]
+ 388              		.loc 1 123 0
+ 389 001e 2378     		ldrb	r3, [r4, #0]	@ zero_extendqisi2
+ 390 0020 0133     		adds	r3, r3, #1
+ 391 0022 93FBF2F2 		sdiv	r2, r3, r2
+ 392 0026 9B18     		adds	r3, r3, r2
+ 393 0028 2370     		strb	r3, [r4, #0]
+ 394              	.L26:
+ 395 002a 38BD     		pop	{r3, r4, r5, pc}
+ 396              	.L29:
+ 397              		.align	2
+ 398              	.L28:
+ 399 002c 00380140 		.word	1073821696
+ 400 0030 00000000 		.word	RX_Insert
+ 401 0034 00000000 		.word	RX_Buffer
+ 402              		.cfi_endproc
+ 403              	.LFE35:
+ 405              		.comm	RX_Buffer,50,1
+ 406              		.comm	RX_Insert,1,1
+ 407              		.comm	RX_Extract,1,1
+ 408              		.text
+ 409              	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 uart.c
+C:\Users\MICHAE~1\AppData\Local\Temp\cccRHBkh.s:24     .text.UART_CharAvailable:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\cccRHBkh.s:29     .text.UART_CharAvailable:00000000 UART_CharAvailable
+C:\Users\MICHAE~1\AppData\Local\Temp\cccRHBkh.s:50     .text.UART_CharAvailable:00000010 $d
+                            *COM*:00000001 RX_Insert
+                            *COM*:00000001 RX_Extract
+C:\Users\MICHAE~1\AppData\Local\Temp\cccRHBkh.s:56     .text.UART_GetChar:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\cccRHBkh.s:61     .text.UART_GetChar:00000000 UART_GetChar
+C:\Users\MICHAE~1\AppData\Local\Temp\cccRHBkh.s:85     .text.UART_GetChar:00000018 $d
+                            *COM*:00000032 RX_Buffer
+C:\Users\MICHAE~1\AppData\Local\Temp\cccRHBkh.s:91     .text.UART_SendChar:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\cccRHBkh.s:96     .text.UART_SendChar:00000000 UART_SendChar
+C:\Users\MICHAE~1\AppData\Local\Temp\cccRHBkh.s:125    .text.UART_SendChar:00000018 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\cccRHBkh.s:130    .text.UART_Send:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\cccRHBkh.s:135    .text.UART_Send:00000000 UART_Send
+C:\Users\MICHAE~1\AppData\Local\Temp\cccRHBkh.s:183    .text.UART_Send:0000002c $d
+C:\Users\MICHAE~1\AppData\Local\Temp\cccRHBkh.s:188    .text.UART_Puts:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\cccRHBkh.s:193    .text.UART_Puts:00000000 UART_Puts
+C:\Users\MICHAE~1\AppData\Local\Temp\cccRHBkh.s:240    .text.UART_Puts:00000028 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\cccRHBkh.s:245    .text.UART_Protocol_Init:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\cccRHBkh.s:250    .text.UART_Protocol_Init:00000000 UART_Protocol_Init
+C:\Users\MICHAE~1\AppData\Local\Temp\cccRHBkh.s:349    .text.UART_Protocol_Init:0000008c $d
+C:\Users\MICHAE~1\AppData\Local\Temp\cccRHBkh.s:355    .text.USART1_IRQHandler:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\cccRHBkh.s:360    .text.USART1_IRQHandler:00000000 USART1_IRQHandler
+C:\Users\MICHAE~1\AppData\Local\Temp\cccRHBkh.s:399    .text.USART1_IRQHandler:0000002c $d
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+USART_SendData
+USART_GetFlagStatus
+GPIO_Init
+NVIC_Init
+USART_Init
+USART_ITConfig
+USART_Cmd
+USART_GetITStatus
+USART_ReceiveData

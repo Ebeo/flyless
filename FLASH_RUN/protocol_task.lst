@@ -1,0 +1,394 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 18, 4
+  12              		.thumb
+  13              		.file	"protocol_task.c"
+  21              	.Ltext0:
+  22              		.cfi_sections	.debug_frame
+  23              		.global	__aeabi_f2d
+  24              		.global	__aeabi_dmul
+  25              		.global	__aeabi_dsub
+  26              		.section	.text.put_logview,"ax",%progbits
+  27              		.align	1
+  28              		.global	put_logview
+  29              		.thumb
+  30              		.thumb_func
+  32              	put_logview:
+  33              	.LFB31:
+  34              		.file 1 "src/system/protocol_task.c"
+   1:src/system/protocol_task.c **** /*
+   2:src/system/protocol_task.c **** 	FLYLess
+   3:src/system/protocol_task.c **** 	flyless.wikidot.com
+   4:src/system/protocol_task.c **** 	contact: <m.bubestinger@gmail.com>
+   5:src/system/protocol_task.c **** 
+   6:src/system/protocol_task.c **** 
+   7:src/system/protocol_task.c ****   	This file is part of FLYless.
+   8:src/system/protocol_task.c **** 
+   9:src/system/protocol_task.c ****     FLYLess is free software: you can redistribute it and/or modify
+  10:src/system/protocol_task.c ****     it under the terms of the GNU General Public License as published by
+  11:src/system/protocol_task.c ****     the Free Software Foundation, either version 3 of the License, or
+  12:src/system/protocol_task.c ****     (at your option) any later version.
+  13:src/system/protocol_task.c **** 
+  14:src/system/protocol_task.c ****     FLYLess is distributed in the hope that it will be useful,
+  15:src/system/protocol_task.c ****     but WITHOUT ANY WARRANTY; without even the implied warranty of
+  16:src/system/protocol_task.c ****     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  17:src/system/protocol_task.c ****     GNU General Public License for more details.
+  18:src/system/protocol_task.c **** 
+  19:src/system/protocol_task.c ****     You should have received a copy of the GNU General Public License
+  20:src/system/protocol_task.c ****     along with FLYLess.  If not, see <http://www.gnu.org/licenses/>.
+  21:src/system/protocol_task.c **** */
+  22:src/system/protocol_task.c **** 
+  23:src/system/protocol_task.c **** 
+  24:src/system/protocol_task.c **** 
+  25:src/system/protocol_task.c **** #include "FreeRTOS.h"
+  26:src/system/protocol_task.c **** #include "task.h"
+  27:src/system/protocol_task.c **** 
+  28:src/system/protocol_task.c **** #include "stm32f10x.h"
+  29:src/system/protocol_task.c **** 
+  30:src/system/protocol_task.c **** #include "global_data.h"
+  31:src/system/protocol_task.c **** 
+  32:src/system/protocol_task.c **** #include "uart.h"
+  33:src/system/protocol_task.c **** #include "adxl345.h"
+  34:src/system/protocol_task.c **** 
+  35:src/system/protocol_task.c **** #include "mav_vect.h"
+  36:src/system/protocol_task.c **** 
+  37:src/system/protocol_task.c **** 
+  38:src/system/protocol_task.c **** #include <stdio.h>
+  39:src/system/protocol_task.c **** 
+  40:src/system/protocol_task.c **** 
+  41:src/system/protocol_task.c **** 
+  42:src/system/protocol_task.c **** 
+  43:src/system/protocol_task.c **** 
+  44:src/system/protocol_task.c **** 
+  45:src/system/protocol_task.c **** void PROTOCOL_Task( void *pvParameters )
+  46:src/system/protocol_task.c **** {
+  47:src/system/protocol_task.c **** 	while(1)
+  48:src/system/protocol_task.c **** 	{
+  49:src/system/protocol_task.c **** 		vTaskDelay( 1 / portTICK_RATE_MS);
+  50:src/system/protocol_task.c **** 		put_logview();
+  51:src/system/protocol_task.c **** 	}
+  52:src/system/protocol_task.c **** }
+  53:src/system/protocol_task.c **** 
+  54:src/system/protocol_task.c **** 
+  55:src/system/protocol_task.c **** 
+  56:src/system/protocol_task.c **** 
+  57:src/system/protocol_task.c **** void put_logview()
+  58:src/system/protocol_task.c **** {
+  35              		.loc 1 58 0
+  36              		.cfi_startproc
+  37              		@ args = 0, pretend = 0, frame = 80
+  38              		@ frame_needed = 0, uses_anonymous_args = 0
+  39 0000 10B5     		push	{r4, lr}
+  40              	.LCFI0:
+  41              		.cfi_def_cfa_offset 8
+  59:src/system/protocol_task.c **** 	char roll[5] = "";
+  60:src/system/protocol_task.c **** 	char nick[5] = "";
+  61:src/system/protocol_task.c **** 	char yaw[5]  = "";
+  62:src/system/protocol_task.c **** 
+  63:src/system/protocol_task.c **** 	char x[5] = "";
+  64:src/system/protocol_task.c **** 	char y[5] = "";
+  65:src/system/protocol_task.c **** 	char z[5] = "";
+  66:src/system/protocol_task.c **** 
+  67:src/system/protocol_task.c **** 	char angle_x[5] = "";
+  68:src/system/protocol_task.c **** 	char angle_y[5] = "";
+  69:src/system/protocol_task.c **** 
+  70:src/system/protocol_task.c **** 	char pid_output[5] = "";
+  71:src/system/protocol_task.c **** 	char pid_ist[5] = "";
+  72:src/system/protocol_task.c **** 
+  73:src/system/protocol_task.c **** 	UART_Puts((uint8_t* )"$1;1;;");
+  74:src/system/protocol_task.c **** 	sprintf(x,"%0.2f;",  global_data.acc_g.x);
+  42              		.loc 1 74 0
+  43 0002 5F4C     		ldr	r4, .L2+24
+  44              		.cfi_offset 14, -4
+  45              		.cfi_offset 4, -8
+  58:src/system/protocol_task.c **** {
+  46              		.loc 1 58 0
+  47 0004 94B0     		sub	sp, sp, #80
+  48              	.LCFI1:
+  49              		.cfi_def_cfa_offset 88
+  59:src/system/protocol_task.c **** 	char roll[5] = "";
+  50              		.loc 1 59 0
+  51 0006 0023     		movs	r3, #0
+  73:src/system/protocol_task.c **** 	UART_Puts((uint8_t* )"$1;1;;");
+  52              		.loc 1 73 0
+  53 0008 5E48     		ldr	r0, .L2+28
+  59:src/system/protocol_task.c **** 	char roll[5] = "";
+  54              		.loc 1 59 0
+  55 000a 1293     		str	r3, [sp, #72]
+  56 000c 8DF84C30 		strb	r3, [sp, #76]
+  60:src/system/protocol_task.c **** 	char nick[5] = "";
+  57              		.loc 1 60 0
+  58 0010 1093     		str	r3, [sp, #64]
+  59 0012 8DF84430 		strb	r3, [sp, #68]
+  61:src/system/protocol_task.c **** 	char yaw[5]  = "";
+  60              		.loc 1 61 0
+  61 0016 0E93     		str	r3, [sp, #56]
+  62 0018 8DF83C30 		strb	r3, [sp, #60]
+  63:src/system/protocol_task.c **** 	char x[5] = "";
+  63              		.loc 1 63 0
+  64 001c 0C93     		str	r3, [sp, #48]
+  65 001e 8DF83430 		strb	r3, [sp, #52]
+  64:src/system/protocol_task.c **** 	char y[5] = "";
+  66              		.loc 1 64 0
+  67 0022 0A93     		str	r3, [sp, #40]
+  68 0024 8DF82C30 		strb	r3, [sp, #44]
+  65:src/system/protocol_task.c **** 	char z[5] = "";
+  69              		.loc 1 65 0
+  70 0028 0893     		str	r3, [sp, #32]
+  71 002a 8DF82430 		strb	r3, [sp, #36]
+  67:src/system/protocol_task.c **** 	char angle_x[5] = "";
+  72              		.loc 1 67 0
+  73 002e 0693     		str	r3, [sp, #24]
+  74 0030 8DF81C30 		strb	r3, [sp, #28]
+  68:src/system/protocol_task.c **** 	char angle_y[5] = "";
+  75              		.loc 1 68 0
+  76 0034 0493     		str	r3, [sp, #16]
+  77 0036 8DF81430 		strb	r3, [sp, #20]
+  70:src/system/protocol_task.c **** 	char pid_output[5] = "";
+  78              		.loc 1 70 0
+  79 003a 0293     		str	r3, [sp, #8]
+  80 003c 8DF80C30 		strb	r3, [sp, #12]
+  71:src/system/protocol_task.c **** 	char pid_ist[5] = "";
+  81              		.loc 1 71 0
+  82 0040 0093     		str	r3, [sp, #0]
+  83 0042 8DF80430 		strb	r3, [sp, #4]
+  73:src/system/protocol_task.c **** 	UART_Puts((uint8_t* )"$1;1;;");
+  84              		.loc 1 73 0
+  85 0046 FFF7FEFF 		bl	UART_Puts
+  86              		.loc 1 74 0
+  87 004a 206A     		ldr	r0, [r4, #32]	@ float
+  88 004c FFF7FEFF 		bl	__aeabi_f2d
+  89 0050 0246     		mov	r2, r0
+  90 0052 0B46     		mov	r3, r1
+  91 0054 0CA8     		add	r0, sp, #48
+  92 0056 4C49     		ldr	r1, .L2+32
+  93 0058 FFF7FEFF 		bl	sprintf
+  75:src/system/protocol_task.c **** 	UART_Puts((uint8_t*)x); //x
+  94              		.loc 1 75 0
+  95 005c 0CA8     		add	r0, sp, #48
+  96 005e FFF7FEFF 		bl	UART_Puts
+  76:src/system/protocol_task.c **** 	sprintf(y,"%0.2f;",  global_data.acc_g.y);
+  97              		.loc 1 76 0
+  98 0062 606A     		ldr	r0, [r4, #36]	@ float
+  99 0064 FFF7FEFF 		bl	__aeabi_f2d
+ 100 0068 0246     		mov	r2, r0
+ 101 006a 0B46     		mov	r3, r1
+ 102 006c 0AA8     		add	r0, sp, #40
+ 103 006e 4649     		ldr	r1, .L2+32
+ 104 0070 FFF7FEFF 		bl	sprintf
+  77:src/system/protocol_task.c **** 	UART_Puts((uint8_t*)y); //y
+ 105              		.loc 1 77 0
+ 106 0074 0AA8     		add	r0, sp, #40
+ 107 0076 FFF7FEFF 		bl	UART_Puts
+  78:src/system/protocol_task.c **** 	sprintf(z,"%0.2f;",  global_data.acc_g.z);
+ 108              		.loc 1 78 0
+ 109 007a A06A     		ldr	r0, [r4, #40]	@ float
+ 110 007c FFF7FEFF 		bl	__aeabi_f2d
+ 111 0080 0246     		mov	r2, r0
+ 112 0082 0B46     		mov	r3, r1
+ 113 0084 08A8     		add	r0, sp, #32
+ 114 0086 4049     		ldr	r1, .L2+32
+ 115 0088 FFF7FEFF 		bl	sprintf
+  79:src/system/protocol_task.c **** 	UART_Puts((uint8_t*)z); //z
+ 116              		.loc 1 79 0
+ 117 008c 08A8     		add	r0, sp, #32
+ 118 008e FFF7FEFF 		bl	UART_Puts
+  80:src/system/protocol_task.c **** 	sprintf(roll,"%0.2f;",  global_data.gyro_rad.x);
+ 119              		.loc 1 80 0
+ 120 0092 606B     		ldr	r0, [r4, #52]	@ float
+ 121 0094 FFF7FEFF 		bl	__aeabi_f2d
+ 122 0098 0246     		mov	r2, r0
+ 123 009a 0B46     		mov	r3, r1
+ 124 009c 12A8     		add	r0, sp, #72
+ 125 009e 3A49     		ldr	r1, .L2+32
+ 126 00a0 FFF7FEFF 		bl	sprintf
+  81:src/system/protocol_task.c **** 	UART_Puts((uint8_t*)roll); //roll
+ 127              		.loc 1 81 0
+ 128 00a4 12A8     		add	r0, sp, #72
+ 129 00a6 FFF7FEFF 		bl	UART_Puts
+  82:src/system/protocol_task.c **** 	sprintf(nick,"%0.2f;",  global_data.gyro_rad.y);
+ 130              		.loc 1 82 0
+ 131 00aa A06B     		ldr	r0, [r4, #56]	@ float
+ 132 00ac FFF7FEFF 		bl	__aeabi_f2d
+ 133 00b0 0246     		mov	r2, r0
+ 134 00b2 0B46     		mov	r3, r1
+ 135 00b4 10A8     		add	r0, sp, #64
+ 136 00b6 3449     		ldr	r1, .L2+32
+ 137 00b8 FFF7FEFF 		bl	sprintf
+  83:src/system/protocol_task.c **** 	UART_Puts((uint8_t*)nick); //nick
+ 138              		.loc 1 83 0
+ 139 00bc 10A8     		add	r0, sp, #64
+ 140 00be FFF7FEFF 		bl	UART_Puts
+  84:src/system/protocol_task.c **** 	sprintf(yaw,"%0.2f;",  global_data.gyro_rad.z);
+ 141              		.loc 1 84 0
+ 142 00c2 E06B     		ldr	r0, [r4, #60]	@ float
+ 143 00c4 FFF7FEFF 		bl	__aeabi_f2d
+ 144 00c8 0246     		mov	r2, r0
+ 145 00ca 0B46     		mov	r3, r1
+ 146 00cc 0EA8     		add	r0, sp, #56
+ 147 00ce 2E49     		ldr	r1, .L2+32
+ 148 00d0 FFF7FEFF 		bl	sprintf
+  85:src/system/protocol_task.c **** 	UART_Puts((uint8_t*)yaw); //yaw
+ 149              		.loc 1 85 0
+ 150 00d4 0EA8     		add	r0, sp, #56
+ 151 00d6 FFF7FEFF 		bl	UART_Puts
+  86:src/system/protocol_task.c **** 	sprintf(angle_x,"%0.2f;",  ((global_data.attitude.x * 57.295) - 0.6)*3 );
+ 152              		.loc 1 86 0
+ 153 00da 6068     		ldr	r0, [r4, #4]	@ float
+ 154 00dc FFF7FEFF 		bl	__aeabi_f2d
+ 155 00e0 21A3     		adr	r3, .L2
+ 156 00e2 D3E90023 		ldrd	r2, [r3]
+ 157 00e6 FFF7FEFF 		bl	__aeabi_dmul
+ 158 00ea 21A3     		adr	r3, .L2+8
+ 159 00ec D3E90023 		ldrd	r2, [r3]
+ 160 00f0 FFF7FEFF 		bl	__aeabi_dsub
+ 161 00f4 0022     		movs	r2, #0
+ 162 00f6 254B     		ldr	r3, .L2+36
+ 163 00f8 FFF7FEFF 		bl	__aeabi_dmul
+ 164 00fc 0246     		mov	r2, r0
+ 165 00fe 0B46     		mov	r3, r1
+ 166 0100 06A8     		add	r0, sp, #24
+ 167 0102 2149     		ldr	r1, .L2+32
+ 168 0104 FFF7FEFF 		bl	sprintf
+  87:src/system/protocol_task.c **** 	UART_Puts((uint8_t*)angle_x);
+ 169              		.loc 1 87 0
+ 170 0108 06A8     		add	r0, sp, #24
+ 171 010a FFF7FEFF 		bl	UART_Puts
+  88:src/system/protocol_task.c **** 	sprintf(angle_y,"%0.2f;",  ((global_data.attitude.y * 57.295) - 4.58));
+ 172              		.loc 1 88 0
+ 173 010e A068     		ldr	r0, [r4, #8]	@ float
+ 174 0110 FFF7FEFF 		bl	__aeabi_f2d
+ 175 0114 14A3     		adr	r3, .L2
+ 176 0116 D3E90023 		ldrd	r2, [r3]
+ 177 011a FFF7FEFF 		bl	__aeabi_dmul
+ 178 011e 16A3     		adr	r3, .L2+16
+ 179 0120 D3E90023 		ldrd	r2, [r3]
+ 180 0124 FFF7FEFF 		bl	__aeabi_dsub
+ 181 0128 0B46     		mov	r3, r1
+ 182 012a 0246     		mov	r2, r0
+ 183 012c 1649     		ldr	r1, .L2+32
+ 184 012e 04A8     		add	r0, sp, #16
+ 185 0130 FFF7FEFF 		bl	sprintf
+  89:src/system/protocol_task.c **** 	UART_Puts((uint8_t*)angle_y);
+ 186              		.loc 1 89 0
+ 187 0134 04A8     		add	r0, sp, #16
+ 188 0136 FFF7FEFF 		bl	UART_Puts
+  90:src/system/protocol_task.c **** 
+  91:src/system/protocol_task.c **** 
+  92:src/system/protocol_task.c **** 	sprintf(pid_output,"%u;",  global_data.pid_output);
+ 189              		.loc 1 92 0
+ 190 013a 226E     		ldr	r2, [r4, #96]
+ 191 013c 1449     		ldr	r1, .L2+40
+ 192 013e 02A8     		add	r0, sp, #8
+ 193 0140 FFF7FEFF 		bl	sprintf
+  93:src/system/protocol_task.c **** 	UART_Puts((uint8_t*)pid_output);
+ 194              		.loc 1 93 0
+ 195 0144 02A8     		add	r0, sp, #8
+ 196 0146 FFF7FEFF 		bl	UART_Puts
+  94:src/system/protocol_task.c **** 	sprintf(pid_ist,"%u;",  global_data.pid_soll);
+ 197              		.loc 1 94 0
+ 198 014a 1149     		ldr	r1, .L2+40
+ 199 014c B4F86620 		ldrh	r2, [r4, #102]
+ 200 0150 6846     		mov	r0, sp
+ 201 0152 FFF7FEFF 		bl	sprintf
+  95:src/system/protocol_task.c **** 	UART_Puts((uint8_t*)pid_ist);
+ 202              		.loc 1 95 0
+ 203 0156 6846     		mov	r0, sp
+ 204 0158 FFF7FEFF 		bl	UART_Puts
+  96:src/system/protocol_task.c **** 
+  97:src/system/protocol_task.c **** 	UART_Puts((uint8_t* )"0\r\n");
+ 205              		.loc 1 97 0
+ 206 015c 0D48     		ldr	r0, .L2+44
+ 207 015e FFF7FEFF 		bl	UART_Puts
+  98:src/system/protocol_task.c **** }
+ 208              		.loc 1 98 0
+ 209 0162 14B0     		add	sp, sp, #80
+ 210 0164 10BD     		pop	{r4, pc}
+ 211              	.L3:
+ 212 0166 00BF     		.align	3
+ 213              	.L2:
+ 214 0168 F6285C8F 		.word	-1889785610
+ 215 016c C2A54C40 		.word	1078764994
+ 216 0170 33333333 		.word	858993459
+ 217 0174 3333E33F 		.word	1071854387
+ 218 0178 52B81E85 		.word	-2061584302
+ 219 017c EB511240 		.word	1074942443
+ 220 0180 00000000 		.word	global_data
+ 221 0184 00000000 		.word	.LC0
+ 222 0188 07000000 		.word	.LC1
+ 223 018c 00000840 		.word	1074266112
+ 224 0190 0E000000 		.word	.LC2
+ 225 0194 12000000 		.word	.LC3
+ 226              		.cfi_endproc
+ 227              	.LFE31:
+ 229              		.section	.text.PROTOCOL_Task,"ax",%progbits
+ 230              		.align	1
+ 231              		.global	PROTOCOL_Task
+ 232              		.thumb
+ 233              		.thumb_func
+ 235              	PROTOCOL_Task:
+ 236              	.LFB30:
+  46:src/system/protocol_task.c **** {
+ 237              		.loc 1 46 0
+ 238              		.cfi_startproc
+ 239              		@ args = 0, pretend = 0, frame = 0
+ 240              		@ frame_needed = 0, uses_anonymous_args = 0
+ 241              	.LVL0:
+ 242 0000 08B5     		push	{r3, lr}
+ 243              	.LCFI2:
+ 244              		.cfi_def_cfa_offset 8
+ 245              	.LVL1:
+ 246              	.L5:
+ 247              	.LBB2:
+  49:src/system/protocol_task.c **** 		vTaskDelay( 1 / portTICK_RATE_MS);
+ 248              		.loc 1 49 0 discriminator 1
+ 249 0002 0120     		movs	r0, #1
+ 250              		.cfi_offset 14, -4
+ 251              		.cfi_offset 3, -8
+ 252 0004 FFF7FEFF 		bl	vTaskDelay
+  50:src/system/protocol_task.c **** 		put_logview();
+ 253              		.loc 1 50 0 discriminator 1
+ 254 0008 FFF7FEFF 		bl	put_logview
+ 255 000c F9E7     		b	.L5
+ 256              	.LBE2:
+ 257              		.cfi_endproc
+ 258              	.LFE30:
+ 260              		.comm	global_data,104,4
+ 261              		.section	.rodata.str1.1,"aMS",%progbits,1
+ 262              	.LC0:
+ 263 0000 24313B31 		.ascii	"$1;1;;\000"
+ 263      3B3B00
+ 264              	.LC1:
+ 265 0007 25302E32 		.ascii	"%0.2f;\000"
+ 265      663B00
+ 266              	.LC2:
+ 267 000e 25753B00 		.ascii	"%u;\000"
+ 268              	.LC3:
+ 269 0012 300D0A00 		.ascii	"0\015\012\000"
+ 270              		.text
+ 271              	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 protocol_task.c
+C:\Users\MICHAE~1\AppData\Local\Temp\ccqKHasb.s:27     .text.put_logview:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccqKHasb.s:32     .text.put_logview:00000000 put_logview
+C:\Users\MICHAE~1\AppData\Local\Temp\ccqKHasb.s:214    .text.put_logview:00000168 $d
+                            *COM*:00000068 global_data
+C:\Users\MICHAE~1\AppData\Local\Temp\ccqKHasb.s:230    .text.PROTOCOL_Task:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccqKHasb.s:235    .text.PROTOCOL_Task:00000000 PROTOCOL_Task
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+__aeabi_f2d
+__aeabi_dmul
+__aeabi_dsub
+UART_Puts
+sprintf
+vTaskDelay

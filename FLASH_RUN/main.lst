@@ -1,0 +1,691 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 18, 4
+  12              		.thumb
+  13              		.file	"main.c"
+  21              	.Ltext0:
+  22              		.cfi_sections	.debug_frame
+  23              		.section	.text.SetClock,"ax",%progbits
+  24              		.align	1
+  25              		.global	SetClock
+  26              		.thumb
+  27              		.thumb_func
+  29              	SetClock:
+  30              	.LFB31:
+  31              		.file 1 "src/main.c"
+   1:src/main.c    **** /*
+   2:src/main.c    **** 	FLYLess
+   3:src/main.c    **** 	flyless.wikidot.com
+   4:src/main.c    **** 	contact: <m.bubestinger@gmail.com>
+   5:src/main.c    **** 
+   6:src/main.c    **** 
+   7:src/main.c    ****   	This file is part of FLYless.
+   8:src/main.c    **** 
+   9:src/main.c    ****     FLYLess is free software: you can redistribute it and/or modify
+  10:src/main.c    ****     it under the terms of the GNU General Public License as published by
+  11:src/main.c    ****     the Free Software Foundation, either version 3 of the License, or
+  12:src/main.c    ****     (at your option) any later version.
+  13:src/main.c    **** 
+  14:src/main.c    ****     FLYLess is distributed in the hope that it will be useful,
+  15:src/main.c    ****     but WITHOUT ANY WARRANTY; without even the implied warranty of
+  16:src/main.c    ****     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  17:src/main.c    ****     GNU General Public License for more details.
+  18:src/main.c    **** 
+  19:src/main.c    ****     You should have received a copy of the GNU General Public License
+  20:src/main.c    ****     along with FLYLess.  If not, see <http://www.gnu.org/licenses/>.
+  21:src/main.c    **** */
+  22:src/main.c    **** 
+  23:src/main.c    **** 
+  24:src/main.c    **** 
+  25:src/main.c    **** 
+  26:src/main.c    **** /* Includes */
+  27:src/main.c    **** 
+  28:src/main.c    **** #include "stm32f10x.h"
+  29:src/main.c    **** #include "stm32f10x_conf.h"
+  30:src/main.c    **** 
+  31:src/main.c    **** #include "FreeRTOSConfig.h"
+  32:src/main.c    **** #include "FreeRTOS.h"
+  33:src/main.c    **** #include "task.h"
+  34:src/main.c    **** #include "queue.h"
+  35:src/main.c    **** #include "semphr.h"
+  36:src/main.c    **** 
+  37:src/main.c    **** 
+  38:src/main.c    **** #include "led.h"
+  39:src/main.c    **** #include "uart.h"
+  40:src/main.c    **** #include "adxl345.h"
+  41:src/main.c    **** #include "itg3200.h"
+  42:src/main.c    **** #include "servo.h"
+  43:src/main.c    **** 
+  44:src/main.c    **** #include "protocol_task.h"
+  45:src/main.c    **** #include "kalman_task.h"
+  46:src/main.c    **** #include "led_task.h"
+  47:src/main.c    **** #include "control_task.h"
+  48:src/main.c    **** 
+  49:src/main.c    **** #include "global_data.h"
+  50:src/main.c    **** 
+  51:src/main.c    **** #define tskKALMAN_PRIORITY		3
+  52:src/main.c    **** #define tskCONTROL_PRIORITY   	3
+  53:src/main.c    **** #define tskPROTOCOL_PRIORITY	1
+  54:src/main.c    **** #define tskLED_PRIORITY			1
+  55:src/main.c    **** 
+  56:src/main.c    **** 
+  57:src/main.c    **** 
+  58:src/main.c    **** void SetClock();
+  59:src/main.c    **** 
+  60:src/main.c    **** /**
+  61:src/main.c    **** **===========================================================================
+  62:src/main.c    **** **
+  63:src/main.c    **** **  Abstract: main program
+  64:src/main.c    **** **
+  65:src/main.c    **** **===========================================================================
+  66:src/main.c    **** */
+  67:src/main.c    **** int main(void)
+  68:src/main.c    **** {
+  69:src/main.c    **** 
+  70:src/main.c    **** 	GPIO_InitTypeDef GPIO_InitStructure;
+  71:src/main.c    **** 
+  72:src/main.c    **** 	/* Hardware Init */
+  73:src/main.c    **** 	/* Init clock system to 64MHz from internal RC-oscillator */
+  74:src/main.c    **** 
+  75:src/main.c    **** 	SystemInit();
+  76:src/main.c    **** 	SetClock();
+  77:src/main.c    **** 
+  78:src/main.c    **** 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_1); /* defined State for NVIC Setup */
+  79:src/main.c    **** 	
+  80:src/main.c    **** 	/* Init LEDs and setup Blinktime to 1/2 second */
+  81:src/main.c    **** 	LED_Init();
+  82:src/main.c    **** 
+  83:src/main.c    **** 	/* reset global data values */
+  84:src/main.c    **** 	global_data_reset();
+  85:src/main.c    **** 
+  86:src/main.c    **** 
+  87:src/main.c    **** 	/* UART Init */
+  88:src/main.c    **** 	UART_Protocol_Init();
+  89:src/main.c    **** 	UART_Puts((uint8_t* )"UUART: OK\r\n");
+  90:src/main.c    **** 
+  91:src/main.c    **** 	/* ADXL345 Init */
+  92:src/main.c    **** 	if(ADXL_SPI_Setup() != SUCCESS)
+  93:src/main.c    **** 	{
+  94:src/main.c    **** 		UART_Puts((uint8_t* )"ADXL: FAILED\r\n");
+  95:src/main.c    **** 	}else
+  96:src/main.c    **** 	{
+  97:src/main.c    **** 		UART_Puts((uint8_t* )"ADXL: OK\r\n");
+  98:src/main.c    **** 	}
+  99:src/main.c    **** 
+ 100:src/main.c    **** 	/* ITG 3200 Init */
+ 101:src/main.c    **** 	/* no Fail-Check implemented */
+ 102:src/main.c    **** 	ITG_I2C_Setup();
+ 103:src/main.c    **** 	//ITG_RefOffset(&global_data.param[PARAM_GYRO_OFF_X]);
+ 104:src/main.c    **** 
+ 105:src/main.c    **** 	UART_Puts((uint8_t* )"ITG 3200: OK\r\n");
+ 106:src/main.c    **** 
+ 107:src/main.c    **** 
+ 108:src/main.c    **** 	SERVO_Init();
+ 109:src/main.c    **** 
+ 110:src/main.c    **** 
+ 111:src/main.c    **** 	/* Create Tasks and start the scheduler */
+ 112:src/main.c    **** 	UART_Puts((uint8_t* )"Now starting the scheduler!\r\n");
+ 113:src/main.c    **** 
+ 114:src/main.c    **** 	xTaskCreate( KALMAN_Task, 	( signed char * ) "KALMAN"	, configMINIMAL_STACK_SIZE * 2	,( void * ) N
+ 115:src/main.c    **** 	xTaskCreate( PROTOCOL_Task, ( signed char * ) "PROT"	, configMINIMAL_STACK_SIZE * 2	,( void * ) NU
+ 116:src/main.c    **** 	xTaskCreate( LED_Task, 	  	( signed char * ) "LED"   	, configMINIMAL_STACK_SIZE 		,( void * ) NUL
+ 117:src/main.c    **** 	xTaskCreate( CONTROL_Task, 	( signed char * ) "CTRL"   	, configMINIMAL_STACK_SIZE 		,( void * ) N
+ 118:src/main.c    **** 
+ 119:src/main.c    **** 	vTaskStartScheduler();
+ 120:src/main.c    **** 
+ 121:src/main.c    **** 	UART_Puts((uint8_t* )"\r\nFailed! U have a problem!");
+ 122:src/main.c    **** 	while(1);
+ 123:src/main.c    **** }
+ 124:src/main.c    **** 
+ 125:src/main.c    **** 
+ 126:src/main.c    **** void SetClock()
+ 127:src/main.c    **** {
+  32              		.loc 1 127 0
+  33              		.cfi_startproc
+  34              		@ args = 0, pretend = 0, frame = 0
+  35              		@ frame_needed = 0, uses_anonymous_args = 0
+  36 0000 10B5     		push	{r4, lr}
+  37              	.LCFI0:
+  38              		.cfi_def_cfa_offset 8
+ 128:src/main.c    **** 
+ 129:src/main.c    **** 	RCC_DeInit();
+  39              		.loc 1 129 0
+  40              		.cfi_offset 14, -4
+  41              		.cfi_offset 4, -8
+  42 0002 FFF7FEFF 		bl	RCC_DeInit
+ 130:src/main.c    **** 
+ 131:src/main.c    **** 	FLASH_SetLatency(FLASH_Latency_2);
+  43              		.loc 1 131 0
+  44 0006 0220     		movs	r0, #2
+  45 0008 FFF7FEFF 		bl	FLASH_SetLatency
+ 132:src/main.c    **** 
+ 133:src/main.c    **** 	RCC_HCLKConfig(RCC_SYSCLK_Div1);	/* 64MHz */
+  46              		.loc 1 133 0
+  47 000c 0020     		movs	r0, #0
+  48 000e FFF7FEFF 		bl	RCC_HCLKConfig
+ 134:src/main.c    **** 	RCC_PCLK1Config(RCC_HCLK_Div2);		/* 32MHz */
+  49              		.loc 1 134 0
+  50 0012 4FF48060 		mov	r0, #1024
+  51 0016 FFF7FEFF 		bl	RCC_PCLK1Config
+ 135:src/main.c    **** 	RCC_PCLK2Config(RCC_HCLK_Div1);		/* 64MHz */
+  52              		.loc 1 135 0
+  53 001a 0020     		movs	r0, #0
+  54 001c FFF7FEFF 		bl	RCC_PCLK2Config
+ 136:src/main.c    **** 
+ 137:src/main.c    **** 
+ 138:src/main.c    **** 	RCC_HSICmd(ENABLE);
+  55              		.loc 1 138 0
+  56 0020 0120     		movs	r0, #1
+  57 0022 FFF7FEFF 		bl	RCC_HSICmd
+ 139:src/main.c    **** 	RCC_PLLCmd(DISABLE);
+  58              		.loc 1 139 0
+  59 0026 0020     		movs	r0, #0
+  60 0028 FFF7FEFF 		bl	RCC_PLLCmd
+ 140:src/main.c    **** 	RCC_PLLConfig(RCC_PLLSource_HSI_Div2,RCC_PLLMul_16); /* Sysclock 64MHz */
+  61              		.loc 1 140 0
+  62 002c 0020     		movs	r0, #0
+  63 002e 4FF46011 		mov	r1, #3670016
+  64 0032 FFF7FEFF 		bl	RCC_PLLConfig
+ 141:src/main.c    **** 	RCC_PLLCmd(ENABLE);
+  65              		.loc 1 141 0
+  66 0036 0120     		movs	r0, #1
+  67 0038 FFF7FEFF 		bl	RCC_PLLCmd
+  68              	.L2:
+ 142:src/main.c    **** 
+ 143:src/main.c    **** 	while (RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET);
+  69              		.loc 1 143 0 discriminator 1
+  70 003c 3920     		movs	r0, #57
+  71 003e FFF7FEFF 		bl	RCC_GetFlagStatus
+  72 0042 0028     		cmp	r0, #0
+  73 0044 FAD0     		beq	.L2
+ 144:src/main.c    **** 
+ 145:src/main.c    **** 	RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
+  74              		.loc 1 145 0
+  75 0046 0220     		movs	r0, #2
+  76 0048 FFF7FEFF 		bl	RCC_SYSCLKConfig
+  77              	.L3:
+ 146:src/main.c    **** 
+ 147:src/main.c    **** 	while (RCC_GetSYSCLKSource() != 0x08);
+  78              		.loc 1 147 0 discriminator 1
+  79 004c FFF7FEFF 		bl	RCC_GetSYSCLKSource
+  80 0050 0828     		cmp	r0, #8
+  81 0052 FBD1     		bne	.L3
+ 148:src/main.c    **** 
+ 149:src/main.c    **** 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2 | RCC_APB1Periph_I2C1 ,ENABLE);
+  82              		.loc 1 149 0
+  83 0054 0121     		movs	r1, #1
+  84 0056 0548     		ldr	r0, .L4
+  85 0058 FFF7FEFF 		bl	RCC_APB1PeriphClockCmd
+ 150:src/main.c    **** 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC | RCC_AP
+  86              		.loc 1 150 0
+  87 005c 45F21D00 		movw	r0, #20509
+  88 0060 0121     		movs	r1, #1
+ 151:src/main.c    **** }
+  89              		.loc 1 151 0
+  90 0062 BDE81040 		pop	{r4, lr}
+ 150:src/main.c    **** 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC | RCC_AP
+  91              		.loc 1 150 0
+  92 0066 FFF7FEBF 		b	RCC_APB2PeriphClockCmd
+  93              	.L5:
+  94 006a 00BF     		.align	2
+  95              	.L4:
+  96 006c 01002000 		.word	2097153
+  97              		.cfi_endproc
+  98              	.LFE31:
+ 100              		.section	.text.main,"ax",%progbits
+ 101              		.align	1
+ 102              		.global	main
+ 103              		.thumb
+ 104              		.thumb_func
+ 106              	main:
+ 107              	.LFB30:
+  68:src/main.c    **** {
+ 108              		.loc 1 68 0
+ 109              		.cfi_startproc
+ 110              		@ args = 0, pretend = 0, frame = 0
+ 111              		@ frame_needed = 0, uses_anonymous_args = 0
+ 112 0000 7FB5     		push	{r0, r1, r2, r3, r4, r5, r6, lr}
+ 113              	.LCFI1:
+ 114              		.cfi_def_cfa_offset 32
+  75:src/main.c    **** 	SystemInit();
+ 115              		.loc 1 75 0
+ 116              		.cfi_offset 14, -4
+ 117              		.cfi_offset 6, -8
+ 118              		.cfi_offset 5, -12
+ 119              		.cfi_offset 4, -16
+ 120              		.cfi_offset 3, -20
+ 121              		.cfi_offset 2, -24
+ 122              		.cfi_offset 1, -28
+ 123              		.cfi_offset 0, -32
+ 124 0002 FFF7FEFF 		bl	SystemInit
+  76:src/main.c    **** 	SetClock();
+ 125              		.loc 1 76 0
+ 126 0006 FFF7FEFF 		bl	SetClock
+  78:src/main.c    **** 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_1); /* defined State for NVIC Setup */
+ 127              		.loc 1 78 0
+ 128 000a 4FF4C060 		mov	r0, #1536
+ 129 000e FFF7FEFF 		bl	NVIC_PriorityGroupConfig
+  81:src/main.c    **** 	LED_Init();
+ 130              		.loc 1 81 0
+ 131 0012 FFF7FEFF 		bl	LED_Init
+ 132              	.LBB4:
+ 133              	.LBB5:
+ 134              		.file 2 "src/global_data.h"
+   1:src/global_data.h **** /*
+   2:src/global_data.h **** 	FLYLess
+   3:src/global_data.h **** 	flyless.wikidot.com
+   4:src/global_data.h **** 	contact: <m.bubestinger@gmail.com>
+   5:src/global_data.h **** 
+   6:src/global_data.h **** 
+   7:src/global_data.h ****   	This file is part of FLYless.
+   8:src/global_data.h **** 
+   9:src/global_data.h ****     FLYLess is free software: you can redistribute it and/or modify
+  10:src/global_data.h ****     it under the terms of the GNU General Public License as published by
+  11:src/global_data.h ****     the Free Software Foundation, either version 3 of the License, or
+  12:src/global_data.h ****     (at your option) any later version.
+  13:src/global_data.h **** 
+  14:src/global_data.h ****     FLYLess is distributed in the hope that it will be useful,
+  15:src/global_data.h ****     but WITHOUT ANY WARRANTY; without even the implied warranty of
+  16:src/global_data.h ****     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  17:src/global_data.h ****     GNU General Public License for more details.
+  18:src/global_data.h **** 
+  19:src/global_data.h ****     You should have received a copy of the GNU General Public License
+  20:src/global_data.h ****     along with FLYLess.  If not, see <http://www.gnu.org/licenses/>.
+  21:src/global_data.h **** */
+  22:src/global_data.h **** 
+  23:src/global_data.h **** #ifndef GLOBAL_DATA_H_
+  24:src/global_data.h **** #define GLOBAL_DATA_H_
+  25:src/global_data.h **** 
+  26:src/global_data.h **** #include "stm32f10x.h"
+  27:src/global_data.h **** #include "mav_vect.h"
+  28:src/global_data.h **** 
+  29:src/global_data.h **** 
+  30:src/global_data.h **** #include <string.h>
+  31:src/global_data.h **** 
+  32:src/global_data.h **** 
+  33:src/global_data.h **** struct global_struct
+  34:src/global_data.h **** {
+  35:src/global_data.h **** 
+  36:src/global_data.h **** 	/**********************
+  37:src/global_data.h **** 	 * System State
+  38:src/global_data.h **** 	 **********************/
+  39:src/global_data.h **** 
+  40:src/global_data.h **** 	uint8_t 	mode;
+  41:src/global_data.h **** 	uint8_t		nav;
+  42:src/global_data.h **** 	uint8_t		state;
+  43:src/global_data.h **** 
+  44:src/global_data.h **** 	float_vect3	attitude;		/* Attitude euler Angles */
+  45:src/global_data.h **** 	float		height;			/* Estimated Height above system start */
+  46:src/global_data.h **** 
+  47:src/global_data.h **** 
+  48:src/global_data.h **** 	/***********************
+  49:src/global_data.h **** 	 * Sensor Values
+  50:src/global_data.h **** 	 **********************/
+  51:src/global_data.h **** 
+  52:src/global_data.h **** 	int16_vect3 acc_off;		/* Offset value */
+  53:src/global_data.h **** 	int16_vect3 acc_raw; 		/* Accelerometer RAW */
+  54:src/global_data.h **** 	float_vect3 acc_g;			/* Accelerometer in g */
+  55:src/global_data.h **** 
+  56:src/global_data.h **** 	int16_vect3 gyro_raw;   	/* Gyro rates RAW */
+  57:src/global_data.h **** 	float_vect3 gyro_rad;       /* Gyro rates in rad/s */
+  58:src/global_data.h **** 	uint16_t 	gyro_temp_raw;  /* Temperature of Gyro-Sensor RAW */
+  59:src/global_data.h **** 	float		gyro_temp;		/* Temperature of Gyro-Sensor in °C */
+  60:src/global_data.h **** 
+  61:src/global_data.h **** 	uint32_t    pressure_raw;	/* Pressure RAW */
+  62:src/global_data.h **** 	uint32_t	pressure_pasc;	/* Pressure in Pascal */
+  63:src/global_data.h **** 	uint32_t	pressure_ground;/* Initial Value */
+  64:src/global_data.h **** 	uint32_t	pressure_diff;  /* pressure_init - pressure_raw */
+  65:src/global_data.h **** 
+  66:src/global_data.h **** 	int16_vect3	magnet_raw;		/* Magnet raw values */
+  67:src/global_data.h **** 
+  68:src/global_data.h **** 	uint32_t 	pid_output;		/* Stellwert für Servo */
+  69:src/global_data.h **** 	uint16_t	pid_ist;
+  70:src/global_data.h **** 	uint16_t	pid_soll;
+  71:src/global_data.h **** 
+  72:src/global_data.h **** }global_data;
+  73:src/global_data.h **** 
+  74:src/global_data.h **** 
+  75:src/global_data.h **** static inline void global_data_reset(void)
+  76:src/global_data.h **** {
+  77:src/global_data.h **** 
+  78:src/global_data.h **** 	global_data.acc_off.x = 0;
+ 135              		.loc 2 78 0
+ 136 0016 374B     		ldr	r3, .L11
+ 137 0018 0022     		movs	r2, #0
+  79:src/global_data.h **** 	global_data.acc_off.y = 0;
+  80:src/global_data.h **** 	global_data.acc_off.z = 0;
+  81:src/global_data.h **** 
+  82:src/global_data.h **** 	global_data.acc_raw.x = 0;
+  83:src/global_data.h **** 	global_data.acc_raw.y = 0;
+  84:src/global_data.h **** 	global_data.acc_raw.z = 0;
+  85:src/global_data.h **** 
+  86:src/global_data.h **** 	global_data.acc_g.x = 0;
+ 138              		.loc 2 86 0
+ 139 001a 0021     		movs	r1, #0
+  78:src/global_data.h **** 	global_data.acc_off.x = 0;
+ 140              		.loc 2 78 0
+ 141 001c 9A82     		strh	r2, [r3, #20]	@ movhi
+  79:src/global_data.h **** 	global_data.acc_off.y = 0;
+ 142              		.loc 2 79 0
+ 143 001e DA82     		strh	r2, [r3, #22]	@ movhi
+  80:src/global_data.h **** 	global_data.acc_off.z = 0;
+ 144              		.loc 2 80 0
+ 145 0020 1A83     		strh	r2, [r3, #24]	@ movhi
+  82:src/global_data.h **** 	global_data.acc_raw.x = 0;
+ 146              		.loc 2 82 0
+ 147 0022 5A83     		strh	r2, [r3, #26]	@ movhi
+  83:src/global_data.h **** 	global_data.acc_raw.y = 0;
+ 148              		.loc 2 83 0
+ 149 0024 9A83     		strh	r2, [r3, #28]	@ movhi
+  84:src/global_data.h **** 	global_data.acc_raw.z = 0;
+ 150              		.loc 2 84 0
+ 151 0026 DA83     		strh	r2, [r3, #30]	@ movhi
+  87:src/global_data.h **** 	global_data.acc_g.y = 0;
+  88:src/global_data.h **** 	global_data.acc_g.z = 0;
+  89:src/global_data.h **** 
+  90:src/global_data.h **** 	global_data.gyro_raw.x = 0;
+ 152              		.loc 2 90 0
+ 153 0028 9A85     		strh	r2, [r3, #44]	@ movhi
+  91:src/global_data.h **** 	global_data.gyro_raw.y = 0;
+ 154              		.loc 2 91 0
+ 155 002a DA85     		strh	r2, [r3, #46]	@ movhi
+  92:src/global_data.h **** 	global_data.gyro_raw.z = 0;
+ 156              		.loc 2 92 0
+ 157 002c 1A86     		strh	r2, [r3, #48]	@ movhi
+  93:src/global_data.h **** 	global_data.gyro_rad.x = 0;
+  94:src/global_data.h **** 	global_data.gyro_rad.y = 0;
+  95:src/global_data.h **** 	global_data.gyro_rad.z = 0;
+  96:src/global_data.h **** 	global_data.gyro_temp_raw = 0;
+ 158              		.loc 2 96 0
+ 159 002e A3F84020 		strh	r2, [r3, #64]	@ movhi
+  97:src/global_data.h **** 	global_data.gyro_temp = 0;
+  98:src/global_data.h **** 
+  99:src/global_data.h **** 	global_data.pressure_raw = 0;
+ 160              		.loc 2 99 0
+ 161 0032 9A64     		str	r2, [r3, #72]
+ 100:src/global_data.h **** 	global_data.pressure_pasc = 0;
+ 162              		.loc 2 100 0
+ 163 0034 DA64     		str	r2, [r3, #76]
+ 101:src/global_data.h **** 	global_data.pressure_ground = 0;
+ 164              		.loc 2 101 0
+ 165 0036 1A65     		str	r2, [r3, #80]
+ 102:src/global_data.h **** 	global_data.pressure_diff = 0;
+ 166              		.loc 2 102 0
+ 167 0038 5A65     		str	r2, [r3, #84]
+ 103:src/global_data.h **** 
+ 104:src/global_data.h **** 	global_data.magnet_raw.x = 0;
+ 168              		.loc 2 104 0
+ 169 003a A3F85820 		strh	r2, [r3, #88]	@ movhi
+ 105:src/global_data.h **** 	global_data.magnet_raw.y = 0;
+ 170              		.loc 2 105 0
+ 171 003e A3F85A20 		strh	r2, [r3, #90]	@ movhi
+ 106:src/global_data.h **** 	global_data.magnet_raw.z = 0;
+ 172              		.loc 2 106 0
+ 173 0042 A3F85C20 		strh	r2, [r3, #92]	@ movhi
+ 107:src/global_data.h **** 
+ 108:src/global_data.h **** 	global_data.pid_output = 0;
+ 174              		.loc 2 108 0
+ 175 0046 1A66     		str	r2, [r3, #96]
+ 109:src/global_data.h **** 	global_data.pid_ist = 0;
+ 176              		.loc 2 109 0
+ 177 0048 A3F86420 		strh	r2, [r3, #100]	@ movhi
+ 110:src/global_data.h **** 	global_data.pid_soll = 100;
+ 178              		.loc 2 110 0
+ 179 004c 6422     		movs	r2, #100
+  86:src/global_data.h **** 	global_data.acc_g.x = 0;
+ 180              		.loc 2 86 0
+ 181 004e 1962     		str	r1, [r3, #32]	@ float
+  87:src/global_data.h **** 	global_data.acc_g.y = 0;
+ 182              		.loc 2 87 0
+ 183 0050 5962     		str	r1, [r3, #36]	@ float
+  88:src/global_data.h **** 	global_data.acc_g.z = 0;
+ 184              		.loc 2 88 0
+ 185 0052 9962     		str	r1, [r3, #40]	@ float
+  93:src/global_data.h **** 	global_data.gyro_rad.x = 0;
+ 186              		.loc 2 93 0
+ 187 0054 5963     		str	r1, [r3, #52]	@ float
+  94:src/global_data.h **** 	global_data.gyro_rad.y = 0;
+ 188              		.loc 2 94 0
+ 189 0056 9963     		str	r1, [r3, #56]	@ float
+  95:src/global_data.h **** 	global_data.gyro_rad.z = 0;
+ 190              		.loc 2 95 0
+ 191 0058 D963     		str	r1, [r3, #60]	@ float
+  97:src/global_data.h **** 	global_data.gyro_temp = 0;
+ 192              		.loc 2 97 0
+ 193 005a 5964     		str	r1, [r3, #68]	@ float
+ 194              		.loc 2 110 0
+ 195 005c A3F86620 		strh	r2, [r3, #102]	@ movhi
+ 196              	.LBE5:
+ 197              	.LBE4:
+  88:src/main.c    **** 	UART_Protocol_Init();
+ 198              		.loc 1 88 0
+ 199 0060 FFF7FEFF 		bl	UART_Protocol_Init
+  89:src/main.c    **** 	UART_Puts((uint8_t* )"UUART: OK\r\n");
+ 200              		.loc 1 89 0
+ 201 0064 2448     		ldr	r0, .L11+4
+ 202 0066 FFF7FEFF 		bl	UART_Puts
+  92:src/main.c    **** 	if(ADXL_SPI_Setup() != SUCCESS)
+ 203              		.loc 1 92 0
+ 204 006a FFF7FEFF 		bl	ADXL_SPI_Setup
+ 205 006e 0128     		cmp	r0, #1
+  94:src/main.c    **** 		UART_Puts((uint8_t* )"ADXL: FAILED\r\n");
+ 206              		.loc 1 94 0
+ 207 0070 14BF     		ite	ne
+ 208 0072 2248     		ldrne	r0, .L11+8
+  97:src/main.c    **** 		UART_Puts((uint8_t* )"ADXL: OK\r\n");
+ 209              		.loc 1 97 0
+ 210 0074 2248     		ldreq	r0, .L11+12
+ 211 0076 FFF7FEFF 		bl	UART_Puts
+ 102:src/main.c    **** 	ITG_I2C_Setup();
+ 212              		.loc 1 102 0
+ 213 007a FFF7FEFF 		bl	ITG_I2C_Setup
+ 105:src/main.c    **** 	UART_Puts((uint8_t* )"ITG 3200: OK\r\n");
+ 214              		.loc 1 105 0
+ 215 007e 2148     		ldr	r0, .L11+16
+ 114:src/main.c    **** 	xTaskCreate( KALMAN_Task, 	( signed char * ) "KALMAN"	, configMINIMAL_STACK_SIZE * 2	,( void * ) N
+ 216              		.loc 1 114 0
+ 217 0080 0024     		movs	r4, #0
+ 105:src/main.c    **** 	UART_Puts((uint8_t* )"ITG 3200: OK\r\n");
+ 218              		.loc 1 105 0
+ 219 0082 FFF7FEFF 		bl	UART_Puts
+ 108:src/main.c    **** 	SERVO_Init();
+ 220              		.loc 1 108 0
+ 221 0086 FFF7FEFF 		bl	SERVO_Init
+ 112:src/main.c    **** 	UART_Puts((uint8_t* )"Now starting the scheduler!\r\n");
+ 222              		.loc 1 112 0
+ 223 008a 1F48     		ldr	r0, .L11+20
+ 224 008c FFF7FEFF 		bl	UART_Puts
+ 114:src/main.c    **** 	xTaskCreate( KALMAN_Task, 	( signed char * ) "KALMAN"	, configMINIMAL_STACK_SIZE * 2	,( void * ) N
+ 225              		.loc 1 114 0
+ 226 0090 0325     		movs	r5, #3
+ 227 0092 1E49     		ldr	r1, .L11+24
+ 228 0094 4FF48072 		mov	r2, #256
+ 229 0098 2346     		mov	r3, r4
+ 230 009a 1D48     		ldr	r0, .L11+28
+ 115:src/main.c    **** 	xTaskCreate( PROTOCOL_Task, ( signed char * ) "PROT"	, configMINIMAL_STACK_SIZE * 2	,( void * ) NU
+ 231              		.loc 1 115 0
+ 232 009c 0126     		movs	r6, #1
+ 114:src/main.c    **** 	xTaskCreate( KALMAN_Task, 	( signed char * ) "KALMAN"	, configMINIMAL_STACK_SIZE * 2	,( void * ) N
+ 233              		.loc 1 114 0
+ 234 009e 0095     		str	r5, [sp, #0]
+ 235 00a0 0194     		str	r4, [sp, #4]
+ 236 00a2 0294     		str	r4, [sp, #8]
+ 237 00a4 0394     		str	r4, [sp, #12]
+ 238 00a6 FFF7FEFF 		bl	xTaskGenericCreate
+ 115:src/main.c    **** 	xTaskCreate( PROTOCOL_Task, ( signed char * ) "PROT"	, configMINIMAL_STACK_SIZE * 2	,( void * ) NU
+ 239              		.loc 1 115 0
+ 240 00aa 1A49     		ldr	r1, .L11+32
+ 241 00ac 4FF48072 		mov	r2, #256
+ 242 00b0 2346     		mov	r3, r4
+ 243 00b2 1948     		ldr	r0, .L11+36
+ 244 00b4 0096     		str	r6, [sp, #0]
+ 245 00b6 0194     		str	r4, [sp, #4]
+ 246 00b8 0294     		str	r4, [sp, #8]
+ 247 00ba 0394     		str	r4, [sp, #12]
+ 248 00bc FFF7FEFF 		bl	xTaskGenericCreate
+ 116:src/main.c    **** 	xTaskCreate( LED_Task, 	  	( signed char * ) "LED"   	, configMINIMAL_STACK_SIZE 		,( void * ) NUL
+ 249              		.loc 1 116 0
+ 250 00c0 1649     		ldr	r1, .L11+40
+ 251 00c2 8022     		movs	r2, #128
+ 252 00c4 2346     		mov	r3, r4
+ 253 00c6 1648     		ldr	r0, .L11+44
+ 254 00c8 0096     		str	r6, [sp, #0]
+ 255 00ca 0194     		str	r4, [sp, #4]
+ 256 00cc 0294     		str	r4, [sp, #8]
+ 257 00ce 0394     		str	r4, [sp, #12]
+ 258 00d0 FFF7FEFF 		bl	xTaskGenericCreate
+ 117:src/main.c    **** 	xTaskCreate( CONTROL_Task, 	( signed char * ) "CTRL"   	, configMINIMAL_STACK_SIZE 		,( void * ) N
+ 259              		.loc 1 117 0
+ 260 00d4 1349     		ldr	r1, .L11+48
+ 261 00d6 8022     		movs	r2, #128
+ 262 00d8 2346     		mov	r3, r4
+ 263 00da 1348     		ldr	r0, .L11+52
+ 264 00dc 0095     		str	r5, [sp, #0]
+ 265 00de 0194     		str	r4, [sp, #4]
+ 266 00e0 0294     		str	r4, [sp, #8]
+ 267 00e2 0394     		str	r4, [sp, #12]
+ 268 00e4 FFF7FEFF 		bl	xTaskGenericCreate
+ 119:src/main.c    **** 	vTaskStartScheduler();
+ 269              		.loc 1 119 0
+ 270 00e8 FFF7FEFF 		bl	vTaskStartScheduler
+ 121:src/main.c    **** 	UART_Puts((uint8_t* )"\r\nFailed! U have a problem!");
+ 271              		.loc 1 121 0
+ 272 00ec 0F48     		ldr	r0, .L11+56
+ 273 00ee FFF7FEFF 		bl	UART_Puts
+ 274              	.L9:
+ 275 00f2 FEE7     		b	.L9
+ 276              	.L12:
+ 277              		.align	2
+ 278              	.L11:
+ 279 00f4 00000000 		.word	global_data
+ 280 00f8 00000000 		.word	.LC0
+ 281 00fc 0C000000 		.word	.LC1
+ 282 0100 1B000000 		.word	.LC2
+ 283 0104 26000000 		.word	.LC3
+ 284 0108 35000000 		.word	.LC4
+ 285 010c 53000000 		.word	.LC5
+ 286 0110 00000000 		.word	KALMAN_Task
+ 287 0114 5A000000 		.word	.LC6
+ 288 0118 00000000 		.word	PROTOCOL_Task
+ 289 011c 5F000000 		.word	.LC7
+ 290 0120 00000000 		.word	LED_Task
+ 291 0124 63000000 		.word	.LC8
+ 292 0128 00000000 		.word	CONTROL_Task
+ 293 012c 68000000 		.word	.LC9
+ 294              		.cfi_endproc
+ 295              	.LFE30:
+ 297              		.section	.text.vApplicationStackOverflowHook,"ax",%progbits
+ 298              		.align	1
+ 299              		.global	vApplicationStackOverflowHook
+ 300              		.thumb
+ 301              		.thumb_func
+ 303              	vApplicationStackOverflowHook:
+ 304              	.LFB32:
+ 152:src/main.c    **** 
+ 153:src/main.c    **** 
+ 154:src/main.c    **** 
+ 155:src/main.c    **** void vApplicationStackOverflowHook( void )
+ 156:src/main.c    **** {
+ 305              		.loc 1 156 0
+ 306              		.cfi_startproc
+ 307              		@ args = 0, pretend = 0, frame = 0
+ 308              		@ frame_needed = 0, uses_anonymous_args = 0
+ 309              		@ link register save eliminated.
+ 310              	.L14:
+ 311 0000 FEE7     		b	.L14
+ 312              		.cfi_endproc
+ 313              	.LFE32:
+ 315              		.comm	global_data,104,4
+ 316              		.section	.rodata.str1.1,"aMS",%progbits,1
+ 317              	.LC0:
+ 318 0000 55554152 		.ascii	"UUART: OK\015\012\000"
+ 318      543A204F 
+ 318      4B0D0A00 
+ 319              	.LC1:
+ 320 000c 4144584C 		.ascii	"ADXL: FAILED\015\012\000"
+ 320      3A204641 
+ 320      494C4544 
+ 320      0D0A00
+ 321              	.LC2:
+ 322 001b 4144584C 		.ascii	"ADXL: OK\015\012\000"
+ 322      3A204F4B 
+ 322      0D0A00
+ 323              	.LC3:
+ 324 0026 49544720 		.ascii	"ITG 3200: OK\015\012\000"
+ 324      33323030 
+ 324      3A204F4B 
+ 324      0D0A00
+ 325              	.LC4:
+ 326 0035 4E6F7720 		.ascii	"Now starting the scheduler!\015\012\000"
+ 326      73746172 
+ 326      74696E67 
+ 326      20746865 
+ 326      20736368 
+ 327              	.LC5:
+ 328 0053 4B414C4D 		.ascii	"KALMAN\000"
+ 328      414E00
+ 329              	.LC6:
+ 330 005a 50524F54 		.ascii	"PROT\000"
+ 330      00
+ 331              	.LC7:
+ 332 005f 4C454400 		.ascii	"LED\000"
+ 333              	.LC8:
+ 334 0063 4354524C 		.ascii	"CTRL\000"
+ 334      00
+ 335              	.LC9:
+ 336 0068 0D0A4661 		.ascii	"\015\012Failed! U have a problem!\000"
+ 336      696C6564 
+ 336      21205520 
+ 336      68617665 
+ 336      20612070 
+ 337              		.text
+ 338              	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 main.c
+C:\Users\MICHAE~1\AppData\Local\Temp\ccUsL3Rn.s:24     .text.SetClock:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccUsL3Rn.s:29     .text.SetClock:00000000 SetClock
+C:\Users\MICHAE~1\AppData\Local\Temp\ccUsL3Rn.s:96     .text.SetClock:0000006c $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccUsL3Rn.s:101    .text.main:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccUsL3Rn.s:106    .text.main:00000000 main
+C:\Users\MICHAE~1\AppData\Local\Temp\ccUsL3Rn.s:279    .text.main:000000f4 $d
+                            *COM*:00000068 global_data
+C:\Users\MICHAE~1\AppData\Local\Temp\ccUsL3Rn.s:298    .text.vApplicationStackOverflowHook:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccUsL3Rn.s:303    .text.vApplicationStackOverflowHook:00000000 vApplicationStackOverflowHook
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+RCC_DeInit
+FLASH_SetLatency
+RCC_HCLKConfig
+RCC_PCLK1Config
+RCC_PCLK2Config
+RCC_HSICmd
+RCC_PLLCmd
+RCC_PLLConfig
+RCC_GetFlagStatus
+RCC_SYSCLKConfig
+RCC_GetSYSCLKSource
+RCC_APB1PeriphClockCmd
+RCC_APB2PeriphClockCmd
+SystemInit
+NVIC_PriorityGroupConfig
+LED_Init
+UART_Protocol_Init
+UART_Puts
+ADXL_SPI_Setup
+ITG_I2C_Setup
+SERVO_Init
+xTaskGenericCreate
+vTaskStartScheduler
+KALMAN_Task
+PROTOCOL_Task
+LED_Task
+CONTROL_Task

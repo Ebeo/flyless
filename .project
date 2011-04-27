@@ -30,6 +30,10 @@
 					<value>cs-make</value>
 				</dictionary>
 				<dictionary>
+					<key>org.eclipse.cdt.make.core.buildLocation</key>
+					<value>C:\dev\SVN\branches\gyro_cam</value>
+				</dictionary>
+				<dictionary>
 					<key>org.eclipse.cdt.make.core.cleanBuildTarget</key>
 					<value>clean</value>
 				</dictionary>

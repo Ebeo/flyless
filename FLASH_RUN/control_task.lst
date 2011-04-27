@@ -1,0 +1,148 @@
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 18, 4
+  12              		.thumb
+  13              		.file	"control_task.c"
+  21              	.Ltext0:
+  22              		.cfi_sections	.debug_frame
+  23              		.global	__aeabi_f2d
+  24              		.global	__aeabi_dmul
+  25              		.global	__aeabi_dsub
+  26              		.global	__aeabi_d2iz
+  27              		.section	.text.CONTROL_Task,"ax",%progbits
+  28              		.align	1
+  29              		.global	CONTROL_Task
+  30              		.thumb
+  31              		.thumb_func
+  33              	CONTROL_Task:
+  34              	.LFB30:
+  35              		.file 1 "src/system/control_task.c"
+   1:src/system/control_task.c **** 
+   2:src/system/control_task.c **** 
+   3:src/system/control_task.c **** 
+   4:src/system/control_task.c **** #include "FreeRTOS.h"
+   5:src/system/control_task.c **** #include "task.h"
+   6:src/system/control_task.c **** 
+   7:src/system/control_task.c **** #include "stm32f10x.h"
+   8:src/system/control_task.c **** 
+   9:src/system/control_task.c **** #include "global_data.h"
+  10:src/system/control_task.c **** 
+  11:src/system/control_task.c **** #include "pid.h"
+  12:src/system/control_task.c **** 
+  13:src/system/control_task.c **** #define K_P     0.60
+  14:src/system/control_task.c **** #define K_I     0.40
+  15:src/system/control_task.c **** #define K_D     0.00
+  16:src/system/control_task.c **** 
+  17:src/system/control_task.c **** 
+  18:src/system/control_task.c **** struct PID_DATA pidData;
+  19:src/system/control_task.c **** 
+  20:src/system/control_task.c **** void CONTROL_Task( void *pvParameters ){
+  36              		.loc 1 20 0
+  37              		.cfi_startproc
+  38              		@ args = 0, pretend = 0, frame = 0
+  39              		@ frame_needed = 0, uses_anonymous_args = 0
+  40              	.LVL0:
+  41 0000 10B5     		push	{r4, lr}
+  42              	.LCFI0:
+  43              		.cfi_def_cfa_offset 8
+  21:src/system/control_task.c **** 
+  22:src/system/control_task.c **** 	int16_t ref, meas;
+  23:src/system/control_task.c **** 	pid_Init(K_P * SCALING_FACTOR, K_I * SCALING_FACTOR , K_D * SCALING_FACTOR , &pidData);
+  44              		.loc 1 23 0
+  45 0002 4C20     		movs	r0, #76
+  46              	.LVL1:
+  47 0004 3321     		movs	r1, #51
+  48 0006 0022     		movs	r2, #0
+  49 0008 194B     		ldr	r3, .L3+16
+  50              		.cfi_offset 14, -4
+  51              		.cfi_offset 4, -8
+  52 000a FFF7FEFF 		bl	pid_Init
+  53              	.L2:
+  24:src/system/control_task.c **** 
+  25:src/system/control_task.c **** 	while(1){
+  26:src/system/control_task.c **** 		vTaskDelay( 10 / portTICK_RATE_MS);
+  27:src/system/control_task.c **** 
+  28:src/system/control_task.c **** 		ref  = (int16_t) (((global_data.attitude.x * 57.295) - 0.6) * 3) + 512;
+  54              		.loc 1 28 0 discriminator 1
+  55 000e 194C     		ldr	r4, .L3+20
+  26:src/system/control_task.c **** 		vTaskDelay( 10 / portTICK_RATE_MS);
+  56              		.loc 1 26 0 discriminator 1
+  57 0010 0A20     		movs	r0, #10
+  58 0012 FFF7FEFF 		bl	vTaskDelay
+  59              		.loc 1 28 0 discriminator 1
+  60 0016 6068     		ldr	r0, [r4, #4]	@ float
+  61 0018 FFF7FEFF 		bl	__aeabi_f2d
+  62 001c 10A3     		adr	r3, .L3
+  63 001e D3E90023 		ldrd	r2, [r3]
+  64 0022 FFF7FEFF 		bl	__aeabi_dmul
+  65 0026 10A3     		adr	r3, .L3+8
+  66 0028 D3E90023 		ldrd	r2, [r3]
+  67 002c FFF7FEFF 		bl	__aeabi_dsub
+  68 0030 0022     		movs	r2, #0
+  69 0032 114B     		ldr	r3, .L3+24
+  70 0034 FFF7FEFF 		bl	__aeabi_dmul
+  71 0038 FFF7FEFF 		bl	__aeabi_d2iz
+  72 003c 00F50070 		add	r0, r0, #512
+  73 0040 80B2     		uxth	r0, r0
+  74              	.LVL2:
+  29:src/system/control_task.c **** 		global_data.pid_soll = ref;
+  75              		.loc 1 29 0 discriminator 1
+  76 0042 A4F86600 		strh	r0, [r4, #102]	@ movhi
+  77              	.LVL3:
+  30:src/system/control_task.c **** 		meas = global_data.pid_ist;
+  31:src/system/control_task.c **** 		global_data.pid_output = pid_Controller(ref, meas, &pidData);
+  78              		.loc 1 31 0 discriminator 1
+  79 0046 B4F96410 		ldrsh	r1, [r4, #100]
+  80 004a 00B2     		sxth	r0, r0
+  81              	.LVL4:
+  82 004c 084A     		ldr	r2, .L3+16
+  83 004e FFF7FEFF 		bl	pid_Controller
+  84              	.LVL5:
+  85 0052 2066     		str	r0, [r4, #96]
+  32:src/system/control_task.c **** 		global_data.pid_ist = global_data.pid_output;
+  86              		.loc 1 32 0 discriminator 1
+  87 0054 A4F86400 		strh	r0, [r4, #100]	@ movhi
+  88 0058 D9E7     		b	.L2
+  89              	.L4:
+  90 005a 00BFAFF3 		.align	3
+  90      0080
+  91              	.L3:
+  92 0060 F6285C8F 		.word	-1889785610
+  93 0064 C2A54C40 		.word	1078764994
+  94 0068 33333333 		.word	858993459
+  95 006c 3333E33F 		.word	1071854387
+  96 0070 00000000 		.word	pidData
+  97 0074 00000000 		.word	global_data
+  98 0078 00000840 		.word	1074266112
+  99              		.cfi_endproc
+ 100              	.LFE30:
+ 102              		.comm	global_data,104,4
+ 103              		.comm	pidData,20,4
+ 104 007c AFF30080 		.text
+ 105              	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 control_task.c
+C:\Users\MICHAE~1\AppData\Local\Temp\ccmhCORB.s:28     .text.CONTROL_Task:00000000 $t
+C:\Users\MICHAE~1\AppData\Local\Temp\ccmhCORB.s:33     .text.CONTROL_Task:00000000 CONTROL_Task
+C:\Users\MICHAE~1\AppData\Local\Temp\ccmhCORB.s:92     .text.CONTROL_Task:00000060 $d
+                            *COM*:00000014 pidData
+                            *COM*:00000068 global_data
+                     .debug_frame:00000010 $d
+C:\Users\MICHAE~1\AppData\Local\Temp\ccmhCORB.s:104    .text.CONTROL_Task:0000007c $t
+
+UNDEFINED SYMBOLS
+__aeabi_f2d
+__aeabi_dmul
+__aeabi_dsub
+__aeabi_d2iz
+pid_Init
+vTaskDelay
+pid_Controller

@@ -32,149 +32,43 @@
 #include "uart.h"
 #include "adxl345.h"
 
-#include "mavlink_bridge.h"
 #include "mav_vect.h"
-#include "mavlink.h"
 
 
 #include <stdio.h>
 
 
-#define ONE_MS			( portTICK_RATE_MS)
 
 
-
-int system_type = MAV_HELICOPTER;
-uint8_t param = 0;
-
-void handle_mav_link_mess(void);
 
 
 void PROTOCOL_Task( void *pvParameters )
 {
-
-	mavlink_msg_heartbeat_send(0, global_data.param[PARAM_SYSTEM_TYPE], 0);
-	mavlink_msg_boot_send(0, global_data.param[PARAM_SW_VERSION]);
-	//mavlink_msg_statustext_send(0, 1, "FLYless");
-
 	while(1)
 	{
-		vTaskDelay( 100 / ONE_MS);
-		ADXL_Convert_to_G(&global_data.acc_raw,&global_data.acc_g);
-		mavlink_msg_heartbeat_send(0, global_data.param[PARAM_SYSTEM_TYPE], 0);
-		mavlink_msg_sys_status_send(0, global_data.mode, global_data.nav, global_data.state, 3000, 0, 0);
-		mavlink_msg_attitude_send(0, 100, global_data.attitude.x,global_data.attitude.y, global_data.attitude.z, global_data.gyro_rad.x, global_data.gyro_rad.y, global_data.gyro_rad.z);
-		mavlink_msg_raw_imu_send(0, 100, global_data.acc_g.x, global_data.acc_g.y, global_data.acc_g.z, global_data.gyro_raw.x, global_data.gyro_raw.y, global_data.gyro_raw.z, global_data.magnet_raw.x, global_data.magnet_raw.y, global_data.magnet_raw.z);
-
-		handle_mav_link_mess();
-
-
-
-		/* should not be here */
-
-		int8_t x1,x2,x3,x4;
-
-		x1 = (int8_t)global_data.param[8];
-		x2 = (int8_t)global_data.param[9];
-		x3 = (int8_t)global_data.param[10];
-		x4 = (int8_t)global_data.param[11];
-
-		SERVO_SetValue(x1,x2,x3,x4);
-
-
+		vTaskDelay( 1 / portTICK_RATE_MS);
+		put_logview();
 	}
 }
 
-void handle_mav_link_mess(void)
-{
 
-	int i,j;
-
-
-	mavlink_message_t msg;
-	mavlink_status_t status;
-	mavlink_param_set_t set;
-	char* key;
-
-	while(UART_CharAvailable())
-	{
-		uint8_t c = UART_GetChar();
-		if(mavlink_parse_char(0, c, &msg, &status))
-		{
-			switch(msg.msgid)
-			{
-				case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
-				break;
-				case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
-					param = 0;
-				break;
-				case MAVLINK_MSG_ID_PARAM_SET:
-				{
-					mavlink_msg_param_set_decode(&msg, &set);
-					key = (char*) set.param_id;
-					for (i = 0; i < ONBOARD_PARAM_COUNT; i++)
-						{
-							uint8_t match = 1;
-							for (j = 0; j < ONBOARD_PARAM_NAME_LENGTH; j++)
-							{
-								// Compare
-								if (((char) (global_data.param_name[i][j]))	!= (char) (key[j]))
-								{
-									match = 0;
-								}
-
-								// End matching if null termination is reached
-								if (((char) global_data.param_name[i][j]) == '\0')
-								{
-									break;
-								}
-							}
-
-							// Check if matched
-							if (match)
-							{
-								// Only write and emit changes if there is actually a difference
-								// AND only write if new value is NOT "not-a-number"
-								// AND is NOT infy
-								if (global_data.param[i] != set.param_value)
-								{
-									global_data.param[i] = set.param_value;
-									// Report back new value
-									mavlink_msg_param_value_send(MAVLINK_COMM_0,
-											(int8_t*) global_data.param_name[i],
-											global_data.param[i], ONBOARD_PARAM_COUNT, param);
-								}
-							}
-						}
-				}
-				break;
-
-			}
-		}
-	}
-
-	if (param < ONBOARD_PARAM_COUNT)
-		{
-			mavlink_msg_param_value_send(0,
-					(int8_t*) global_data.param_name[param],
-					global_data.param[param], ONBOARD_PARAM_COUNT, param);
-			param++;
-		}
-}
 
 
 void put_logview()
 {
-	char roll[10] = "";
-	char nick[10] = "";
-	char yaw[10]  = "";
+	char roll[5] = "";
+	char nick[5] = "";
+	char yaw[5]  = "";
 
-	char x[10] = "";
-	char y[10] = "";
-	char z[10] = "";
+	char x[5] = "";
+	char y[5] = "";
+	char z[5] = "";
 
-	char angle_x[10] = "";
-	char angle_y[10] = "";
+	char angle_x[5] = "";
+	char angle_y[5] = "";
+
+	char pid_output[5] = "";
+	char pid_ist[5] = "";
 
 	UART_Puts((uint8_t* )"$1;1;;");
 	sprintf(x,"%0.2f;",  global_data.acc_g.x);
@@ -189,10 +83,17 @@ void put_logview()
 	UART_Puts((uint8_t*)nick); //nick
 	sprintf(yaw,"%0.2f;",  global_data.gyro_rad.z);
 	UART_Puts((uint8_t*)yaw); //yaw
-	sprintf(angle_x,"%0.2f;",  (global_data.attitude.x * 57.295));
+	sprintf(angle_x,"%0.2f;",  ((global_data.attitude.x * 57.295) - 0.6)*3 );
 	UART_Puts((uint8_t*)angle_x);
-	sprintf(angle_y,"%0.2f;",  (global_data.attitude.y * 57.295));
+	sprintf(angle_y,"%0.2f;",  ((global_data.attitude.y * 57.295) - 4.58));
 	UART_Puts((uint8_t*)angle_y);
+
+
+	sprintf(pid_output,"%u;",  global_data.pid_output);
+	UART_Puts((uint8_t*)pid_output);
+	sprintf(pid_ist,"%u;",  global_data.pid_soll);
+	UART_Puts((uint8_t*)pid_ist);
+
 	UART_Puts((uint8_t* )"0\r\n");
 }
 
